@@ -74,12 +74,30 @@
         <div class="col-md-6">
             <div id="expertDistroDiv" style="display:none;margin-bottom: 20px;">
                 <h3>Compiled distribution map</h3>
+
                 <img id="distroMapImage" src="${resource(dir: 'images', file: 'noImage.jpg')}" class="distroImg" style="width:316px;" alt="occurrence map" onerror="this.style.display='none'"/>
                 <p class="mapAttribution">Compiled distribution map provided by <span id="dataResource">[data resource not known]</span></p>
             </div>
             <div class="taxon-map">
                 <h3>Occurrence records map (<span class="occurrenceRecordCount">0</span> records)</h3>
+                <g:if test="${message(code:'overview.map.button.records.map.subtitle', default:'')}">
+                    <p>${g.message(code:'overview.map.button.records.map.subtitle')}</p>
+                </g:if>
                 <div id="leafletMap"></div>
+                <!-- RR for legend display, if needed -->
+                <div id="template" style="display:none">
+                    <div class="colourbyTemplate">
+                        <a class="colour-by-legend-toggle colour-by-control tooltips" href="#" title="Map legend - click to expand"><i class="fa fa-list-ul fa-lg" style="color:#333"></i></a>
+                        <form class="leaflet-control-layers-list">
+                            <div class="leaflet-control-layers-overlays">
+                                <div style="overflow:auto;max-height:400px;">
+                                    <a href="#" class="hideColourControl pull-right" style="padding-left:10px;"><i class="glyphicon glyphicon-remove" style="color:#333"></i></a>
+                                    <table class="legendTable"></table>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 <g:if test="${grailsApplication.config.spatial.baseURL}">
                     <g:set var="mapUrl">${grailsApplication.config.spatial.baseURL}?q=lsid:${tc?.taxonConcept?.guid}</g:set>

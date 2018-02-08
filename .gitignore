@@ -2,6 +2,8 @@ target/*
 .idea/*
 *.iml
 .slcache/*
+build/*
+.gradle/*
 web-app/WEB-INF/tld/fmt.tld
 
 web-app/WEB-INF/tld/c.tld

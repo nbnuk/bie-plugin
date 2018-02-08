@@ -115,6 +115,24 @@ function loadMap() {
     var speciesLayers = new L.LayerGroup();
     taxonLayer.addTo(speciesLayers);
 
+    var ColourByControl = L.Control.extend({
+        options: {
+            position: 'topright',
+            collapsed: false
+        },
+        onAdd: function (map) {
+            // create the control container with a particular class name
+            var $controlToAdd = $('.colourbyTemplate').clone();
+            var container = L.DomUtil.create('div', 'leaflet-control-layers');
+            var $container = $(container);
+            $container.attr("id","colourByControl");
+            $container.attr('aria-haspopup', true);
+            $container.html($controlToAdd.html());
+            return container;
+        }
+    });
+
+
     SHOW_CONF.map = L.map('leafletMap', {
         center: [SHOW_CONF.defaultDecimalLatitude, SHOW_CONF.defaultDecimalLongitude],
         zoom: SHOW_CONF.defaultZoomLevel,
@@ -142,11 +160,128 @@ function loadMap() {
 
     L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
 
+    SHOW_CONF.map.addControl(new ColourByControl());
+
+    $('.colour-by-control').click(function(e){
+        if($(this).parent().hasClass('leaflet-control-layers-expanded')){
+            $(this).parent().removeClass('leaflet-control-layers-expanded');
+            $('.colour-by-legend-toggle').show();
+        } else {
+            $(this).parent().addClass('leaflet-control-layers-expanded');
+            $('.colour-by-legend-toggle').hide();
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+
+    $('.colour-by-control').parent().addClass('leaflet-control-layers-expanded');
+    $('.colour-by-legend-toggle').hide();
+
+    $('#colourByControl').mouseover(function(e){
+        //console.log('mouseover');
+        SHOW_CONF.map.dragging.disable();
+        SHOW_CONF.map.off('click', pointLookupClickRegister);
+    });
+
+    $('#colourByControl').mouseout(function(e){
+        //console.log('mouseout');
+        SHOW_CONF.map.dragging.enable();
+        SHOW_CONF.map.on('click', pointLookupClickRegister);
+    });
+
+    $('.hideColourControl').click(function(e){
+        //console.log('hideColourControl');
+        $('#colourByControl').removeClass('leaflet-control-layers-expanded');
+        $('.colour-by-legend-toggle').show();
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+
     //SHOW_CONF.map.on('click', onMapClick);
     SHOW_CONF.map.invalidateSize(false);
 
     updateOccurrenceCount();
     fitMapToBounds();
+
+    if( SHOW_CONF.mapEnvLegend != '') {
+        $('.legendTable').html('<tr><td>Loading legend....</td></tr>');
+        var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + SHOW_CONF.mapEnvLegend + "&type=application/json";
+        //console.log(legendUrl);
+        $.ajax({
+            url: legendUrl,
+            success: function (data) {
+                $('.legendTable').html('');
+
+                $(".legendTable")
+                    .append($('<tr>')
+                        .append($('<td>')
+                            .addClass('legendTitle')
+                            .html(SHOW_CONF.mapEnvLegendTitle + ":")
+                        )
+                    );
+
+                $.each(data, function (index, legendDef) {
+                    var legItemName = legendDef.name ? legendDef.name : 'Not specified';
+                    addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, legendDef);
+                });
+            }
+        });
+    } else {
+        $('#colourByControl').hide();
+    }
+}
+
+var clickCount = 0;
+
+/**
+ * Fudge to allow double clicks to propagate to map while allowing single clicks to be registered
+ *
+ */
+function pointLookupClickRegister(e) {
+    clickCount += 1;
+    if (clickCount <= 1) {
+        setTimeout(function() {
+            if (clickCount <= 1) {
+                pointLookup(e);
+            }
+            clickCount = 0;
+        }, 400);
+    }
+}
+
+function addLegendItem(name, red, green, blue, data){
+    var isoDateRegEx = /^(\d{4})-\d{2}-\d{2}T.*/; // e.g. 2001-02-31T12:00:00Z with year capture
+    if (name.search(isoDateRegEx) > -1) {
+        // convert full ISO date to YYYY-MM-DD format
+        name = name.replace(isoDateRegEx, "$1");
+    }
+    var startOfRange = name.indexOf(":[");
+    if (startOfRange != -1) {
+        /* var nameLabel = jQuery.i18n.prop(name.substring(0,startOfRange)).toLowerCase().replace(/\b[a-z]/g, function(letter) {
+            return letter.toUpperCase();
+        }); */
+        var nameVal = name.substring(startOfRange+1).replace("["," ").replace("]"," ").toLowerCase().trim();
+    } else {
+        var nameVal = name;
+    }
+    var legendText = (nameVal);
+
+
+    $(".legendTable")
+        .append($('<tr>')
+            .append($('<td>')
+                .append($('<i>')
+                    .addClass('legendColour')
+                    .attr('style', "background-color:rgb("+ red +","+ green +","+ blue + ");")
+                )
+                .append($('<span>')
+                    .addClass('legendItemName')
+                    .html(legendText)
+                )
+            )
+        );
 }
 
 /**
