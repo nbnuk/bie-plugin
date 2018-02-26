@@ -220,7 +220,7 @@ function loadMap() {
             $('.legendTable').html('<tr><td>Loading legend....</td></tr>');
 
             var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + legendQ + "&type=application/json";
-            
+
             $.ajax({
                 url: legendUrl,
                 success: function (data) {
@@ -236,7 +236,7 @@ function loadMap() {
 
                     $.each(data, function (index, legendDef) {
                         var legItemName = legendDef.name ? legendDef.name : 'Not specified';
-                        addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, legendDef);
+                        addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, legendDef, SHOW_CONF.mapEnvLegendHideMax);
                     });
                 }
             });
@@ -262,7 +262,7 @@ function pointLookupClickRegister(e) {
     }
 }
 
-function addLegendItem(name, red, green, blue, data){
+function addLegendItem(name, red, green, blue, data, hiderangemax){
     var isoDateRegEx = /^(\d{4})-\d{2}-\d{2}T.*/; // e.g. 2001-02-31T12:00:00Z with year capture
     if (name.search(isoDateRegEx) > -1) {
         // convert full ISO date to YYYY-MM-DD format
@@ -271,6 +271,7 @@ function addLegendItem(name, red, green, blue, data){
     var startOfRange = name.indexOf(":[");
     if (startOfRange != -1) {
         var nameVal = name.substring(startOfRange+1).replace("["," ").replace("]"," ").replace(" TO "," to ").trim();
+        if (hiderangemax) nameVal = nameVal.split(' to ')[0];
     } else {
         var nameVal = name;
     }
