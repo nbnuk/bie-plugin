@@ -219,10 +219,8 @@ function loadMap() {
         } else {
             $('.legendTable').html('<tr><td>Loading legend....</td></tr>');
 
-            //var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + SHOW_CONF.mapEnvLegend + "&type=application/json";
             var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + legendQ + "&type=application/json";
-
-            console.log(legendUrl);
+            
             $.ajax({
                 url: legendUrl,
                 success: function (data) {
