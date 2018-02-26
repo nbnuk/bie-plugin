@@ -79,7 +79,7 @@
                 <p class="mapAttribution">Compiled distribution map provided by <span id="dataResource">[data resource not known]</span></p>
             </div>
             <div class="taxon-map">
-                <h3>Occurrence records map (<span class="occurrenceRecordCount">0</span> records)</h3>
+                <h3><span class="occurrenceRecordCount">0</span> presence records <span class="occurrenceRecordCountAll"></span></h3>
                 <g:if test="${message(code:'overview.map.button.records.map.subtitle', default:'')}">
                     <p>${g.message(code:'overview.map.button.records.map.subtitle')}</p>
                 </g:if>

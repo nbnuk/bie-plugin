@@ -29,7 +29,7 @@ function showSpeciesPage() {
     ////setup controls
     addAlerts();
     // loadBhl(); // now an external link to BHL
-    loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName,'trove-integration','trove-result-list','previousTrove','nextTrove');
+    //loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName,'trove-integration','trove-result-list','previousTrove','nextTrove');
 }
 
 function loadSpeciesLists(){
@@ -205,31 +205,44 @@ function loadMap() {
     updateOccurrenceCount();
     fitMapToBounds();
 
-    if( SHOW_CONF.mapEnvLegend != '') {
-        $('.legendTable').html('<tr><td>Loading legend....</td></tr>');
-        var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + SHOW_CONF.mapEnvLegend + "&type=application/json";
-        //console.log(legendUrl);
-        $.ajax({
-            url: legendUrl,
-            success: function (data) {
-                $('.legendTable').html('');
-
-                $(".legendTable")
-                    .append($('<tr>')
-                        .append($('<td>')
-                            .addClass('legendTitle')
-                            .html(SHOW_CONF.mapEnvLegendTitle + ":")
-                        )
-                    );
-
-                $.each(data, function (index, legendDef) {
-                    var legItemName = legendDef.name ? legendDef.name : 'Not specified';
-                    addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, legendDef);
-                });
+    if( SHOW_CONF.mapEnvOptions != '') {
+        var mapOptArr = SHOW_CONF.mapEnvOptions.split(";");
+        var legendQ = '';
+        for (var i = 0; i < mapOptArr.length; i++) {
+            if (mapOptArr[i].indexOf('colormode:') == 0) {
+                legendQ = mapOptArr[i].substring('colormode:'.length);
+                break;
             }
-        });
-    } else {
-        $('#colourByControl').hide();
+        }
+        if (legendQ == '') {
+            $('#colourByControl').hide();
+        } else {
+            $('.legendTable').html('<tr><td>Loading legend....</td></tr>');
+
+            //var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + SHOW_CONF.mapEnvLegend + "&type=application/json";
+            var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + legendQ + "&type=application/json";
+
+            console.log(legendUrl);
+            $.ajax({
+                url: legendUrl,
+                success: function (data) {
+                    $('.legendTable').html('');
+
+                    $(".legendTable")
+                        .append($('<tr>')
+                            .append($('<td>')
+                                .addClass('legendTitle')
+                                .html(SHOW_CONF.mapEnvLegendTitle + ":")
+                            )
+                        );
+
+                    $.each(data, function (index, legendDef) {
+                        var legItemName = legendDef.name ? legendDef.name : 'Not specified';
+                        addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, legendDef);
+                    });
+                }
+            });
+        }
     }
 }
 
@@ -259,10 +272,7 @@ function addLegendItem(name, red, green, blue, data){
     }
     var startOfRange = name.indexOf(":[");
     if (startOfRange != -1) {
-        /* var nameLabel = jQuery.i18n.prop(name.substring(0,startOfRange)).toLowerCase().replace(/\b[a-z]/g, function(letter) {
-            return letter.toUpperCase();
-        }); */
-        var nameVal = name.substring(startOfRange+1).replace("["," ").replace("]"," ").toLowerCase().trim();
+        var nameVal = name.substring(startOfRange+1).replace("["," ").replace("]"," ").replace(" TO "," to ").trim();
     } else {
         var nameVal = name;
     }
@@ -288,16 +298,38 @@ function addLegendItem(name, red, green, blue, data){
  * Update the total records count for the occurrence map in heading text
  */
 function updateOccurrenceCount() {
-    $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + SHOW_CONF.mapQueryContext, function( data ) {
+    var recsAll = -1;
+    var recsPresence = -1;
+    $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + SHOW_CONF.mapQueryContext + "&fq=-occurrence_status:absent", function( data ) {
         if (data) {
             $.each( data, function( key, value ) {
-                if (value && typeof value == "number") {
-                    $('.occurrenceRecordCount').html(value.toLocaleString());
-                    return false;
+                if (recsPresence < 0) {
+                    if (value && typeof value == "number") {
+                        recsPresence = value;
+                        $('.occurrenceRecordCount').html(recsPresence.toLocaleString());
+                    }
                 }
             });
         }
     });
+
+    //if biocacheService.queryContext already removes absence records then don't bother with full count
+    if(SHOW_CONF.mapQueryContext.indexOf("-occurrence_status:absent") == -1) {
+        $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + SHOW_CONF.mapQueryContext, function( data ) {
+            if (data) {
+                $.each( data, function( key, value ) {
+                    if (recsAll < 0) {
+                        if (value && typeof value == "number") {
+                            recsAll = value;
+                            if (recsPresence != recsAll) {
+                                $('.occurrenceRecordCountAll').html("(" + recsAll.toLocaleString() + " in total)");
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
 }
 
 function fitMapToBounds() {

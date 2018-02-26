@@ -394,30 +394,29 @@
         addPreferenceButton: ${imageClient.checkAllowableEditRole()},
         mapOutline: ${grailsApplication.config.map.outline ?: 'false'},
         mapEnvOptions: "${grailsApplication.config.map.env?.options?:'color:' + grailsApplication.config.map.records.colour+ ';name:circle;size:4;opacity:0.8'}",
-        mapEnvLegend: "${grailsApplication.config.map.env?.legend?:''}",
         mapEnvLegendTitle: "${grailsApplication.config.map.env?.legendtitle?:(grailsApplication.config.map.env?.legend?:'')}",
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"
-    };
+};
 
-    $(function(){
-        showSpeciesPage();
-    });
+$(function(){
+showSpeciesPage();
+});
 
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-        var target = $(e.target).attr("href");
-        if(target == "#records"){
-            $('#charts').html(''); //prevent multiple loads
-            <charts:biocache
-                biocacheServiceUrl="${grailsApplication.config.biocacheService.baseURL}"
-                biocacheWebappUrl="${grailsApplication.config.biocache.baseURL}"
-                q="lsid:${guid}"
-                qc="${grailsApplication.config.biocacheService.queryContext ?: ''}"
-                fq=""/>
-    }
-    if(target == '#overview'){
-        loadMap();
-    }
+$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+var target = $(e.target).attr("href");
+if(target == "#records"){
+    $('#charts').html(''); //prevent multiple loads
+    <charts:biocache
+        biocacheServiceUrl="${grailsApplication.config.biocacheService.baseURL}"
+        biocacheWebappUrl="${grailsApplication.config.biocache.baseURL}"
+        q="lsid:${guid}"
+        qc="${grailsApplication.config.biocacheService.queryContext ?: ''}"
+        fq=""/>
+}
+if(target == '#overview'){
+loadMap();
+}
 });
 </asset:script>
 </body>
