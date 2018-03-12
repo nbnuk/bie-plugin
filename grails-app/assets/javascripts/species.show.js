@@ -99,21 +99,38 @@ function loadMap() {
     if(SHOW_CONF.map != null){
         return;
     }
-
-    //add an occurrence layer for this taxon
-    var taxonLayer = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-        SHOW_CONF.guid + "&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter, {
+    var prms = {
         layers: 'ALA:occurrences',
         format: 'image/png',
         transparent: true,
         attribution: SHOW_CONF.mapAttribution,
         bgcolor: "0x000000",
-        outline: SHOW_CONF.mapOutline,
-        ENV: SHOW_CONF.mapEnvOptions
-    });
+        outline: SHOW_CONF.mapOutline
+    };
 
     var speciesLayers = new L.LayerGroup();
-    taxonLayer.addTo(speciesLayers);
+
+    if (SHOW_CONF.mapLayersFqs != '') { // additional FQ criteria for each map layer
+        fqsArr = SHOW_CONF.mapLayersFqs.split("|");
+        coloursArr = SHOW_CONF.mapLayersColours.split("|");
+        var prmsLayer = [];
+        var taxonLayer = [];
+        var htmlEntityDecoder = document.createElement('textarea');
+        for (i = 0; i < fqsArr.length; i++) {
+            prmsLayer[i] = $.extend({}, prms);
+            prmsLayer[i]["ENV"] = SHOW_CONF.mapEnvOptions + ";color:" + coloursArr[i];
+            htmlEntityDecoder.innerHTML = fqsArr[i];
+            taxonLayer[i] = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
+                SHOW_CONF.guid + "&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter +
+                "&fq=" + htmlEntityDecoder.value, prmsLayer[i]);
+            taxonLayer[i].addTo(speciesLayers);
+        }
+    } else {
+        prms["ENV"] = SHOW_CONF.mapEnvOptions;
+        var taxonLayer = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
+            SHOW_CONF.guid + "&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter, prms);
+        taxonLayer.addTo(speciesLayers);
+    }
 
     var ColourByControl = L.Control.extend({
         options: {
@@ -156,9 +173,16 @@ function loadMap() {
     var sciName = SHOW_CONF.scientificName;
 
     var overlays = {};
-    overlays[sciName] = taxonLayer;
-
-    L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
+    if (SHOW_CONF.mapLayersFqs != '') { // additional FQ criteria for each map layer
+        labelsArr = SHOW_CONF.mapLayersLabels.split("|");
+        for (i = 0; i < taxonLayer.length; i++) {
+            overlays[sciName + ": " + labelsArr[i]] = taxonLayer[i];
+        }
+        L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
+    } else {
+        overlays[sciName] = taxonLayer;
+        L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
+    }
 
     SHOW_CONF.map.addControl(new ColourByControl());
 
@@ -205,7 +229,7 @@ function loadMap() {
     updateOccurrenceCount();
     fitMapToBounds();
 
-    if( SHOW_CONF.mapEnvOptions != '') {
+    if( SHOW_CONF.mapEnvOptions.indexOf("colormode:") >= 0 || SHOW_CONF.mapLayersLabels != '') {
         var mapOptArr = SHOW_CONF.mapEnvOptions.split(";");
         var legendQ = '';
         for (var i = 0; i < mapOptArr.length; i++) {
@@ -214,32 +238,37 @@ function loadMap() {
                 break;
             }
         }
-        if (legendQ == '') {
-            $('#colourByControl').hide();
-        } else {
-            $('.legendTable').html('<tr><td>Loading legend....</td></tr>');
+        $('.legendTable').html('');
+        $(".legendTable")
+            .append($('<tr>')
+                .append($('<td>')
+                    .addClass('legendTitle')
+                    .html(SHOW_CONF.mapEnvLegendTitle + ":")
+                )
+            );
 
+        if (legendQ != '') {
             var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + legendQ + "&type=application/json";
 
             $.ajax({
                 url: legendUrl,
                 success: function (data) {
-                    $('.legendTable').html('');
-
-                    $(".legendTable")
-                        .append($('<tr>')
-                            .append($('<td>')
-                                .addClass('legendTitle')
-                                .html(SHOW_CONF.mapEnvLegendTitle + ":")
-                            )
-                        );
 
                     $.each(data, function (index, legendDef) {
                         var legItemName = legendDef.name ? legendDef.name : 'Not specified';
-                        addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, legendDef, SHOW_CONF.mapEnvLegendHideMax);
+                        addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, '', SHOW_CONF.mapEnvLegendHideMax);
                     });
                 }
             });
+        } else if (SHOW_CONF.mapLayersLabels != '') {
+            //use predefined legend entries and colours
+            var mapLabelsArr = SHOW_CONF.mapLayersLabels.split("|");
+            var mapColoursArr = SHOW_CONF.mapLayersColours.split("|");
+            for (var i = 0; i < mapLabelsArr.length; i++) {
+                addLegendItem(mapLabelsArr[i], 0, 0, 0, mapColoursArr[i], false); //use rgbhex and full label provided
+            }
+        } else {
+            $('#colourByControl').hide();
         }
     }
 }
@@ -262,8 +291,9 @@ function pointLookupClickRegister(e) {
     }
 }
 
-function addLegendItem(name, red, green, blue, data, hiderangemax){
+function addLegendItem(name, red, green, blue, rgbhex, hiderangemax){
     var isoDateRegEx = /^(\d{4})-\d{2}-\d{2}T.*/; // e.g. 2001-02-31T12:00:00Z with year capture
+
     if (name.search(isoDateRegEx) > -1) {
         // convert full ISO date to YYYY-MM-DD format
         name = name.replace(isoDateRegEx, "$1");
@@ -277,13 +307,12 @@ function addLegendItem(name, red, green, blue, data, hiderangemax){
     }
     var legendText = (nameVal);
 
-
     $(".legendTable")
         .append($('<tr>')
             .append($('<td>')
                 .append($('<i>')
                     .addClass('legendColour')
-                    .attr('style', "background-color:rgb("+ red +","+ green +","+ blue + ");")
+                    .attr('style', "background-color:" + (rgbhex!=''? "#" + rgbhex : "rgb("+ red +","+ green +","+ blue + ")") + ";")
                 )
                 .append($('<span>')
                     .addClass('legendItemName')
@@ -292,6 +321,7 @@ function addLegendItem(name, red, green, blue, data, hiderangemax){
             )
         );
 }
+
 
 /**
  * Update the total records count for the occurrence map in heading text

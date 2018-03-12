@@ -396,6 +396,9 @@
         mapEnvOptions: "${grailsApplication.config.map.env?.options?:'color:' + (grailsApplication.config.map?.records?.colour?: 'e6704c')+ ';name:circle;size:4;opacity:0.8'}",
         mapEnvLegendTitle: "${grailsApplication.config.map.env?.legendtitle?:''}",
         mapEnvLegendHideMax: "${grailsApplication.config.map.env?.legendhidemaxrange?:false}",
+        mapLayersFqs: "${grailsApplication.config.map.layers?.fqs?:''}",
+        mapLayersLabels: "${grailsApplication.config.map.layers?.labels?:''}",
+        mapLayersColours: "${grailsApplication.config.map.layers?.colours?:''}",
 
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"

@@ -9,7 +9,8 @@ web-app/WEB-INF/tld/fmt.tld
 web-app/WEB-INF/tld/c.tld
 
 plugin.xml
-
+out/*
+*.DS_Store
 grails-bie-plugin-1.0-SNAPSHOT.zip
 
 grails-bie-plugin-1.0-SNAPSHOT.zip.sha1
