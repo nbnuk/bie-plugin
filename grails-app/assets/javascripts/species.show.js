@@ -110,6 +110,7 @@ function loadMap() {
 
     var speciesLayers = new L.LayerGroup();
 
+    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
     if (SHOW_CONF.mapLayersFqs != '') { // additional FQ criteria for each map layer
         fqsArr = SHOW_CONF.mapLayersFqs.split("|");
         coloursArr = SHOW_CONF.mapLayersColours.split("|");
@@ -121,14 +122,14 @@ function loadMap() {
             prmsLayer[i]["ENV"] = SHOW_CONF.mapEnvOptions + ";color:" + coloursArr[i];
             htmlEntityDecoder.innerHTML = fqsArr[i];
             taxonLayer[i] = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-                SHOW_CONF.guid + "&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter +
+                SHOW_CONF.guid + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter +
                 "&fq=" + htmlEntityDecoder.value, prmsLayer[i]);
             taxonLayer[i].addTo(speciesLayers);
         }
     } else {
         prms["ENV"] = SHOW_CONF.mapEnvOptions;
         var taxonLayer = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-            SHOW_CONF.guid + "&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter, prms);
+            SHOW_CONF.guid + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter, prms);
         taxonLayer.addTo(speciesLayers);
     }
 
@@ -329,7 +330,8 @@ function addLegendItem(name, red, green, blue, rgbhex, hiderangemax){
 function updateOccurrenceCount() {
     var recsAll = -1;
     var recsPresence = -1;
-    $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + SHOW_CONF.mapQueryContext + "&fq=-occurrence_status:absent", function( data ) {
+    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
+    $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + mapContextUnencoded + "&fq=-occurrence_status:absent", function( data ) {
         if (data) {
             $.each( data, function( key, value ) {
                 if (recsPresence < 0) {
@@ -344,7 +346,7 @@ function updateOccurrenceCount() {
 
     //if biocacheService.queryContext already removes absence records then don't bother with full count
     if(SHOW_CONF.mapQueryContext.indexOf("-occurrence_status:absent") == -1) {
-        $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + SHOW_CONF.mapQueryContext, function( data ) {
+        $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + mapContextUnencoded, function( data ) {
             if (data) {
                 $.each( data, function( key, value ) {
                     if (recsAll < 0) {
@@ -414,8 +416,9 @@ function loadDataProviders(){
         SHOW_CONF.guid +
         '&pageSize=0&flimit=-1';
 
+    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
     if(SHOW_CONF.mapQueryContext){
-       url = url + '&fq=' + SHOW_CONF.mapQueryContext;
+       url = url + '&fq=' + mapContextUnencoded;
     }
 
     url = url + '&facet=on&facets=data_resource_uid&callback=?';
