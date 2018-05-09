@@ -79,8 +79,15 @@ class SpeciesController {
         }
 
         def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
+        log.info "SearchRequestParamsDTO = " + requestObj
         def searchResults = bieService.searchBie(requestObj)
-        log.debug "SearchRequestParamsDTO = " + requestObj
+
+        def lsids = ""
+        def sr = searchResults?.searchResults
+        log.info('here ' + sr.results)
+        sr.results.each { result ->
+            lsids += (lsids != ""? "%20OR%20" : "") + result.guid
+        }
 
         // empty search -> search for all records
         if (query.isEmpty()) {
@@ -105,7 +112,9 @@ class SpeciesController {
                     filterQuery: filterQuery,
                     idxTypes: utilityService.getIdxtypes(searchResults?.searchResults?.facetResults),
                     isAustralian: false,
-                    collectionsMap: utilityService.addFqUidMap(filterQuery)
+                    collectionsMap: utilityService.addFqUidMap(filterQuery),
+                    lsids: lsids,
+                    offset: startIndex
             ])
         }
     }

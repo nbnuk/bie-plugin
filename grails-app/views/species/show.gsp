@@ -89,6 +89,14 @@
                 <strong>Name authority:</strong>
                 <span class="name-authority">${tc?.taxonConcept.nameAuthority ?: grailsApplication.config.defaultNameAuthority}</span>
             </h5>
+            <g:if test="${grailsApplication.config.species?.additionalHeadlines}">
+                <g:each var="fieldToDisplay" in="${grailsApplication.config.species.additionalHeadlines.split(",")}">
+                    <g:if test='${tc."${fieldToDisplay}"}'>
+                        <h5 class="inline-head"><strong><g:message code="facet.${fieldToDisplay}" default="${fieldToDisplay}"/>:</strong>
+                        <span class="species-headline-${fieldToDisplay}">${tc."${fieldToDisplay}"}</span></h5>
+                    </g:if>
+                </g:each>
+            </g:if>
         </div>
     </header>
 
@@ -399,6 +407,8 @@
         mapLayersFqs: "${grailsApplication.config.map.layers?.fqs?:''}",
         mapLayersLabels: "${grailsApplication.config.map.layers?.labels?:''}",
         mapLayersColours: "${grailsApplication.config.map.layers?.colours?:''}",
+
+        speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}",
 
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"

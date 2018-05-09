@@ -250,7 +250,7 @@ function loadMap() {
 
         if (legendQ != '') {
             var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + legendQ + "&type=application/json";
-
+            //console.log(legendUrl);
             $.ajax({
                 url: legendUrl,
                 success: function (data) {

@@ -24,6 +24,7 @@
     <asset:javascript src="search"/>
     <asset:javascript src="atlas"/>
     <asset:stylesheet src="atlas"/>
+    <asset:stylesheet src="search"/>
     <asset:script type="text/javascript">
         // global var to pass GSP vars into JS file
         SEARCH_CONF = {
@@ -49,7 +50,7 @@
                 <h1>
                     Search for <strong>${searchResults.queryTitle == "*:*" ? 'everything' : searchResults.queryTitle}</strong>
                     returned <g:formatNumber number="${searchResults.totalRecords}" type="number"/>
-                    results.
+                    ${params.startIndex} , ${params.rows}
                  </h1>
             </div>
             <div class="col-sm-3">
@@ -159,6 +160,37 @@
                                 Download
                             </a>
                         </div>
+                    </g:if>
+
+                    <g:if test="${grailsApplication.config?.search?.mapResults=='true'}">
+                        <div class="taxon-map">
+                            <h3><span class="occurrenceRecordCount">0</span> presence records <span class="occurrenceRecordCountAll"></span></h3>
+                            <g:if test="${message(code:'overview.map.button.records.map.subtitle', default:'')}">
+                                <p>${g.message(code:'overview.map.button.records.map.subtitle')}</p>
+                            </g:if>
+                            <div id="leafletMap"></div>
+                            <!-- RR for legend display, if needed -->
+                            <div id="template" style="display:none">
+                                <div class="colourbyTemplate">
+                                    <a class="colour-by-legend-toggle colour-by-control tooltips" href="#" title="Map legend - click to expand"><i class="fa fa-list-ul fa-lg" style="color:#333"></i></a>
+                                    <form class="leaflet-control-layers-list">
+                                        <div class="leaflet-control-layers-overlays">
+                                            <div style="overflow:auto;max-height:400px;">
+                                                <a href="#" class="hideColourControl pull-right" style="padding-left:10px;"><i class="glyphicon glyphicon-remove" style="color:#333"></i></a>
+                                                <table class="legendTable"></table>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <g:if test="${grailsApplication.config.spatial.baseURL}">
+                            <g:set var="mapUrl">${grailsApplication.config.spatial.baseURL}?q=lsid:(${lsids})</g:set>
+                        </g:if>
+                        <g:else>
+                            <g:set var="mapUrl">${biocacheUrl}/occurrences/search?q=lsid:(${lsids})#tab_mapView</g:set>
+                        </g:else>
                     </g:if>
 
                     <form class="form-inline">
@@ -316,9 +348,9 @@
                 </ol><!--close results-->
 
                 <div>
-                    <tb:paginate total="${searchResults?.totalRecords}"
+                    <tb:paginate total="${searchResults?.totalRecords}" max="${params.rows}"
                             action="search"
-                            params="${[q: params.q, fq: params.fq, dir: params.dir]}"
+                            params="${[q: params.q, fq: params.fq, dir: params.dir, sortField: params.sortField, rows: params.rows]}"
                     />
                 </div>
             </div><!--end .col-wide last-->
@@ -362,6 +394,284 @@
         });
     </asset:script>
 </g:if>
+<asset:script type="text/javascript" >
+
+var SHOW_CONF = {
+        biocacheUrl:        "${grailsApplication.config.biocache.baseURL}",
+        biocacheServiceUrl: "${grailsApplication.config.biocacheService.baseURL}",
+        layersServiceUrl:   "${grailsApplication.config.layersService.baseURL}",
+        collectoryUrl:      "${grailsApplication.config.collectory.baseURL}",
+        profileServiceUrl:  "${grailsApplication.config.profileService.baseURL}",
+        serverName:         "${grailsApplication.config.grails.serverURL}",
+        bieUrl:             "${grailsApplication.config.bie.baseURL}",
+        alertsUrl:          "${grailsApplication.config.alerts.baseUrl}",
+        remoteUser:         "${request.remoteUser ?: ''}",
+        defaultDecimalLatitude: ${grailsApplication.config.defaultDecimalLatitude},
+        defaultDecimalLongitude: ${grailsApplication.config.defaultDecimalLongitude},
+        defaultZoomLevel: ${grailsApplication.config.defaultZoomLevel},
+        mapAttribution: "${raw(grailsApplication.config.skin.orgNameLong)}",
+        defaultMapUrl: "${grailsApplication.config.map.default.url}",
+        defaultMapAttr: "${raw(grailsApplication.config.map.default.attr)}",
+        defaultMapDomain: "${grailsApplication.config.map.default.domain}",
+        defaultMapId: "${grailsApplication.config.map.default.id}",
+        defaultMapToken: "${grailsApplication.config.map.default.token}",
+        recordsMapColour: "${grailsApplication.config.map.records.colour}",
+        mapQueryContext: "${grailsApplication.config.biocacheService.queryContext}",
+        additionalMapFilter: "${raw(grailsApplication.config.additionalMapFilter)}",
+        noImage100Url: "${resource(dir: 'images', file: 'noImage100.jpg')}",
+        map: null,
+        imageDialog: '${imageViewerType}',
+        addPreferenceButton: ${imageClient.checkAllowableEditRole()},
+        mapOutline: ${grailsApplication.config.map.outline ?: 'false'},
+        mapEnvOptions: "name:circle;size:4;opacity:0.8",
+        mapLayersFqs: "${grailsApplication.config.searchmap?.layers?.fqs?:''}",
+        speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}"
+};
+
+//from biocache-service colorUtil, plus other websafe colours (more than 100, which is current max on records-per-page)
+var colours = [/* colorUtil */ "8B0000", "FF0000", "CD5C5C", "E9967A", "8B4513", "D2691E", "F4A460", "FFA500", "006400", "008000", "00FF00", "90EE90", "191970", "0000FF",
+			"4682B4", "5F9EA0", "00FFFF", "B0E0E6", "556B2F", "BDB76B", "FFFF00", "FFE4B5", "4B0082", "800080", "FF00FF", "DDA0DD", "000000", "FFFFFF",
+            /* websafe */ "CC6699", "660066", "9966CC", "CCCCFF", "0099CC", "993366", "990099", "990033", "00CC66", "0033FF", "999966", "FF0099", "FF6600",
+            "CC6633", "66CC99", "CCFFCC", "99CC00", "330000", "660033", "FF3300", "FF0033", "330066", "CC3366", "3300CC", "339966", "FFFF99", "669966",
+            "663333", "33FF66", "33FFFF", "999933", "00FFCC", "33CC99", "FF0066", "3366CC", "0033CC", "66CC00", "663399", "993399", "99CC33", "660000",
+            "3333CC", "CCFF33", "6633FF", "66FFFF", "00CC99", "003399", "9966FF", "996699", "33FF00", "CC99CC", "FF99CC", "6699FF", "6666CC", "FF9966",
+            "003333", "6633CC", "FF33CC", "669933", "FFCC33", "FFCCCC", "33FF33", "CCCC00", "99CCFF", "330099", "FF33FF", "663300", "FFFFCC", "66FF00",
+            "339933", "FF00CC", "00CCFF", "CC6666", "66CCFF", "336699", "009933", "33FF99", "009900", "CC3300", "333333", "CC0000", "99CC99", "0066FF",
+            "99FFFF", "66FFCC", "FF3333", "CC99FF", "FF9900", "CCCC66", "660099", "FFCC99", "3366FF", "FF6633", "990066", "CC66FF", "00CC33", "00CC00",
+            "333300", "009966", "CC0033", "CC3333", "339999", "CC33FF", "CC0066", "FFCC00", "CC00FF", "CCFF66", "9999CC", "00FF66", "666633", "003300",
+            "993300", "996633", "993333", "FFCCFF", "000066", "99FF00", "FF6666", "FF9933", "3399FF", "66CC66", "CC9966", "999900", "3333FF", "6600FF",
+            "CC00CC", "66FF66", "99FF66", "669900", "6666FF", "990000", "3300FF", "CC33CC", "CCFFFF", "9999FF", "999999", "330033", "CC0099", "000033",
+            "339900", "CC9933", "33CC00", "FF3366", "FF3399", "009999", "FFCC66", "333366", "99FF33", "CC6600", "33CCCC", "663366", "336666", "CCFF00",
+            "666666", "003366", "0099FF", "336633", "CCCC33", "CC66CC", "66FF33", "336600", "006699", "00CCCC", "000099", "9933FF", "FF6699", "66FF99",
+            "9933CC", "FF99FF", "996600", "33FFCC", "66CC33", "006600", "99CCCC", "3399CC", "0066CC", "33CC66", "99FF99", "33CC33", "6699CC", "666699",
+            "FF66CC", "CC3399", "9900CC", "CC9900", "CC9999", "669999", "FF66FF", "00FF33", "FFFF33", "CCFF99", "CCCCCC", "66CCCC", "996666", "006633",
+            "FFFF66", "9900FF", "00FF99", "333399", "99FFCC", "666600", "33CCFF", "006666", "0000CC", "6600CC", "CCCC99", "FF9999", "99CC66"
+			];
+
+function loadMap() {
+
+    var prms = {
+        layers: 'ALA:occurrences',
+        format: 'image/png',
+        transparent: true,
+        attribution: SHOW_CONF.mapAttribution,
+        bgcolor: "0x000000",
+        outline: SHOW_CONF.mapOutline
+    };
+
+    var speciesLayers = new L.LayerGroup();
+
+    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
+
+
+    var taxonLayer = [];
+    var occurrenceCount = 0;
+    <g:each status="i" var="result" in="${searchResults.results}">
+        if (${result.occurrenceCount} > 0) {
+            prms["ENV"] = SHOW_CONF.mapEnvOptions + ";color:" + colours[${i}];
+            taxonLayer[${i}] = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
+                "${result.guid}" + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter, prms);
+            taxonLayer[${i}].addTo(speciesLayers);
+            occurrenceCount += ${result.occurrenceCount};
+        }
+    </g:each>
+
+    var ColourByControl = L.Control.extend({
+        options: {
+            position: 'topright',
+            collapsed: false
+        },
+        onAdd: function (map) {
+            // create the control container with a particular class name
+            var $controlToAdd = $('.colourbyTemplate').clone();
+            var container = L.DomUtil.create('div', 'leaflet-control-layers');
+            var $container = $(container);
+            $container.attr("id","colourByControl");
+            $container.attr('aria-haspopup', true);
+            $container.html($controlToAdd.html());
+            return container;
+        }
+    });
+
+
+    SHOW_CONF.map = L.map('leafletMap', {
+        center: [SHOW_CONF.defaultDecimalLatitude, SHOW_CONF.defaultDecimalLongitude],
+        zoom: SHOW_CONF.defaultZoomLevel,
+        layers: [speciesLayers],
+        scrollWheelZoom: false
+    });
+
+    var defaultBaseLayer = L.tileLayer(SHOW_CONF.defaultMapUrl, {
+        attribution: SHOW_CONF.defaultMapAttr,
+        subdomains: SHOW_CONF.defaultMapDomain,
+        mapid: SHOW_CONF.defaultMapId,
+        token: SHOW_CONF.defaultMapToken
+    });
+
+    defaultBaseLayer.addTo(SHOW_CONF.map);
+
+    var baseLayers = {
+        "Base layer": defaultBaseLayer
+    };
+
+    var overlays = {};
+    <g:each status="i" var="result" in="${searchResults.results}">
+        if (${result.occurrenceCount} > 0) {
+            overlays["${result.scientificName}"] = taxonLayer[${i}];
+        }
+    </g:each>
+    L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
+
+    SHOW_CONF.map.addControl(new ColourByControl());
+
+    $('.colour-by-control').click(function(e){
+        if($(this).parent().hasClass('leaflet-control-layers-expanded')){
+            $(this).parent().removeClass('leaflet-control-layers-expanded');
+            $('.colour-by-legend-toggle').show();
+        } else {
+            $(this).parent().addClass('leaflet-control-layers-expanded');
+            $('.colour-by-legend-toggle').hide();
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+
+    $('.colour-by-control').parent().addClass('leaflet-control-layers-expanded');
+    $('.colour-by-legend-toggle').hide();
+
+    $('#colourByControl').mouseover(function(e){
+        //console.log('mouseover');
+        SHOW_CONF.map.dragging.disable();
+        SHOW_CONF.map.off('click', pointLookupClickRegister);
+    });
+
+    $('#colourByControl').mouseout(function(e){
+        //console.log('mouseout');
+        SHOW_CONF.map.dragging.enable();
+        SHOW_CONF.map.on('click', pointLookupClickRegister);
+    });
+
+    $('.hideColourControl').click(function(e){
+        //console.log('hideColourControl');
+        $('#colourByControl').removeClass('leaflet-control-layers-expanded');
+        $('.colour-by-legend-toggle').show();
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+
+    //SHOW_CONF.map.on('click', onMapClick);
+    SHOW_CONF.map.invalidateSize(false);
+
+    $('.occurrenceRecordCount').html(occurrenceCount.toLocaleString());
+    fitMapToBounds();
+
+    $('.legendTable').html('');
+        $(".legendTable")
+            .append($('<tr>')
+                .append($('<td>')
+                    .addClass('legendTitle')
+                    .html("Species" + ":")
+                )
+            );
+    <g:each status="i" var="result" in="${searchResults.results}">
+        if (${result.occurrenceCount} > 0) {
+            addLegendItem("${result.scientificName}", 0,0,0, colours[${i}], false);
+        }
+    </g:each>
+}
+
+var clickCount = 0;
+
+/**
+ * Fudge to allow double clicks to propagate to map while allowing single clicks to be registered
+ *
+ */
+function pointLookupClickRegister(e) {
+    clickCount += 1;
+    if (clickCount <= 1) {
+        setTimeout(function() {
+            if (clickCount <= 1) {
+                pointLookup(e);
+            }
+            clickCount = 0;
+        }, 400);
+    }
+}
+
+function addLegendItem(name, red, green, blue, rgbhex, hiderangemax){
+    var isoDateRegEx = /^(\d{4})-\d{2}-\d{2}T.*/; // e.g. 2001-02-31T12:00:00Z with year capture
+
+    if (name.search(isoDateRegEx) > -1) {
+        // convert full ISO date to YYYY-MM-DD format
+        name = name.replace(isoDateRegEx, "$1");
+    }
+    var startOfRange = name.indexOf(":[");
+    if (startOfRange != -1) {
+        var nameVal = name.substring(startOfRange+1).replace("["," ").replace("]"," ").replace(" TO "," to ").trim();
+        if (hiderangemax) nameVal = nameVal.split(' to ')[0];
+    } else {
+        var nameVal = name;
+    }
+    var legendText = (nameVal);
+
+    $(".legendTable")
+        .append($('<tr>')
+            .append($('<td>')
+                .append($('<i>')
+                    .addClass('legendColour')
+                    .attr('style', "background-color:" + (rgbhex!=''? "#" + rgbhex : "rgb("+ red +","+ green +","+ blue + ")") + ";")
+                )
+                .append($('<span>')
+                    .addClass('legendItemName')
+                    .html(legendText)
+                )
+            )
+        );
+}
+
+
+function fitMapToBounds() {
+    var lat_min = null, lat_max = null, lon_min = null, lon_max = null;
+    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
+
+    <g:each status="i" var="result" in="${searchResults.results}">
+        if (${result.occurrenceCount} > 0) {
+            var jsonUrl = SHOW_CONF.biocacheServiceUrl + "/mapping/bounds.json?q=lsid:" + "${result.guid}" + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter + "&callback=?";
+
+            $.getJSON(jsonUrl, function(data) {
+                var changed = false;
+                if (data.length == 4 && data[0] != 0 && data[1] != 0) {
+                    //console.log("data", data);
+
+                    if (lat_min === null || lat_min > data[0]) { lat_min = data[0]; changed = true;}
+                    if (lat_max === null || lat_max < data[2]) { lat_max = data[2]; changed = true;}
+                    if (lon_min === null || lon_min > data[1]) { lon_min = data[1]; changed = true;}
+                    if (lon_max === null || lon_max < data[3]) { lon_max = data[3]; changed = true;}
+                }
+                if (changed) {
+                    var sw = L.latLng(lon_min || 0, lat_min || 0);
+                    var ne = L.latLng(lon_max || 0, lat_max || 0);
+                    //console.log("sw", sw.toString());
+                    //console.log("ne", ne.toString());
+                    var dataBounds = L.latLngBounds(sw, ne);
+                    var mapBounds = SHOW_CONF.map.getBounds();
+                    SHOW_CONF.map.fitBounds(dataBounds);
+                    if (SHOW_CONF.map.getZoom() > 12) {
+                        SHOW_CONF.map.setZoom(12);
+                    }
+
+                    SHOW_CONF.map.invalidateSize(true);
+                }
+            });
+        }
+    </g:each>
+}
+
+loadMap();
+
+</asset:script>
 
 </body>
 </html>

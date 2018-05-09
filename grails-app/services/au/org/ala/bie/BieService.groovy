@@ -12,11 +12,16 @@ class BieService {
     def searchBie(SearchRequestParamsDTO requestObj) {
 
         def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
-                "&facets=" + grailsApplication.config.facets + "&q.op=OR"
+                "&facets=" + grailsApplication.config.facets
+        if (grailsApplication.config.bieService.queryContext_q_op) {
+            queryUrl += "&q.op=" + grailsApplication.config.bieService.queryContext_q_op
+        }  else {
+            queryUrl += "&q.op=OR"
+        }
 
         //add a query context for BIE - to reduce taxa to a subset
         if(grailsApplication.config.bieService.queryContext){
-            queryUrl = queryUrl + "&" + URLEncoder.encode(grailsApplication.config.bieService.queryContext, "UTF-8")
+            queryUrl = queryUrl + "&" + grailsApplication.config.bieService.queryContext.replaceAll(" ","%20")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
         }
 
         //add a query context for biocache - this will influence record counts
@@ -24,6 +29,7 @@ class BieService {
             queryUrl = queryUrl + "&bqc=" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ","%20")
         }
 
+        log.info("queryUrl = " + queryUrl)
         def json = webService.get(queryUrl)
         JSON.parse(json)
     }
