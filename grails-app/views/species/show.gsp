@@ -409,6 +409,7 @@
         mapLayersColours: "${grailsApplication.config.map.layers?.colours?:''}",
 
         speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}",
+        speciesAdditionalHeadlinesSpeciesList: "${grailsApplication.config.species?.additionalHeadlinesSpeciesList?:''}",
 
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"

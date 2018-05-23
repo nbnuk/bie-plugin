@@ -13,11 +13,7 @@ class BieService {
 
         def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
                 "&facets=" + grailsApplication.config.facets
-        if (grailsApplication.config.bieService.queryContext_q_op) {
-            queryUrl += "&q.op=" + grailsApplication.config.bieService.queryContext_q_op
-        }  else {
-            queryUrl += "&q.op=OR"
-        }
+        queryUrl += "&q.op=OR"
 
         //add a query context for BIE - to reduce taxa to a subset
         if(grailsApplication.config.bieService.queryContext){
@@ -40,6 +36,17 @@ class BieService {
         }
         try {
             def json = webService.get(grailsApplication.config.speciesList.baseURL + "/ws/species/" + guid.replaceAll(/\s+/,'+') + "?isBIE=true", true)
+            return JSON.parse(json)
+        } catch(Exception e){
+            //handles the situation where time out exceptions etc occur.
+            log.error("Error retrieving species list.", e)
+            return []
+        }
+    }
+
+    def getSpeciesListDetails(dataResourceUid) {
+        try {
+            def json = webService.get(grailsApplication.config.speciesList.baseURL + "/ws/speciesList/" + (dataResourceUid ?: ""), true)
             return JSON.parse(json)
         } catch(Exception e){
             //handles the situation where time out exceptions etc occur.

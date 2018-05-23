@@ -70,10 +70,11 @@ class SpeciesController {
         if(query == "*") query = ""
         def filterQuery = params.list('fq') // will be a list even with only one value
         def startIndex = params.offset?:0
-        def rows = params.rows?:10
-        def sortField = params.sortField?:""
-        def sortDirection = params.dir?:"desc"
-
+        def rows = params.rows?:(grailsApplication.config?.search?.defaultRows?:10)
+        def sortField = params.sortField?:(grailsApplication.config?.search?.defaultSortField?:"")
+        def sortDirection = params.dir?:(grailsApplication.config?.search?.defaultSortOrder?:"desc")
+        //log.info "SortField= " + sortField
+        //log.info "SortDir= " + sortDirection
         if (params.dir && !params.sortField) {
             sortField = "score" // default sort (field) of "score" when order is defined on its own
         }
@@ -84,9 +85,10 @@ class SpeciesController {
 
         def lsids = ""
         def sr = searchResults?.searchResults
-        log.info('here ' + sr.results)
-        sr.results.each { result ->
-            lsids += (lsids != ""? "%20OR%20" : "") + result.guid
+        if (sr) {
+            sr.results.each { result ->
+                lsids += (lsids != "" ? "%20OR%20" : "") + result.guid
+            }
         }
 
         // empty search -> search for all records
@@ -115,6 +117,7 @@ class SpeciesController {
                     collectionsMap: utilityService.addFqUidMap(filterQuery),
                     lsids: lsids,
                     offset: startIndex
+                    // speciesListNames: speciesListNames RR
             ])
         }
     }

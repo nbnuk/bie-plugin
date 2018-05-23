@@ -1,4 +1,5 @@
 //= require jquery.sortElemets
+//= require jquery-ui.min.js
 /*
  * Copyright (C) 2012 Atlas of Living Australia
  * All Rights Reserved.
@@ -41,7 +42,7 @@ $(document).ready(function() {
     });
 
     // AJAX search results
-    injectBhlResults();
+    //injectBhlResults();
     injectBiocacheResults();
 
     // in mobile view toggle display of facets
@@ -97,6 +98,7 @@ function reloadWithParam(paramName, paramValue) {
     var fqList = $.getQueryParam('fq'); //$.query.get('fq');
     var sort = $.getQueryParam('sortField');
     var dir = $.getQueryParam('dir');
+    var rows = $.getQueryParam('rows');
     // add query param
     if (q != null) {
         paramList.push("q=" + q);
@@ -113,13 +115,16 @@ function reloadWithParam(paramName, paramValue) {
     if (paramName != 'dir' && dir != null) {
         paramList.push('dir' + "=" + dir);
     }
+    // add rows param if already set
+    if (paramName != 'rows' && rows != null) {
+        paramList.push('rows' + "=" + rows);
+    }
     // add the changed value
     if (paramName != null && paramValue != null) {
         paramList.push(paramName + "=" +paramValue);
     }
     //alert("paramName = " + paramName + " and paramValue = " + paramValue);
     //alert("params = "+paramList.join("&"));
-    //alert("url = "+window.location.pathname);
     window.location.href = window.location.pathname + '?' + paramList.join('&');
 }
 

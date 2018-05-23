@@ -35,6 +35,9 @@ function showSpeciesPage() {
 function loadSpeciesLists(){
 
     //console.log('### loadSpeciesLists #### ' + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid);
+    var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split(","); //TODO: what if bad embedded HTMl characters? what if key contains comma?
+    var addedToHeadline = [];
+    $.each(listHeadlines, function (idx, listHeadline) {addedToHeadline[idx] = false;}); //only allow first species list kvp to match a given headline and be included in the headline area
     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
         for(var i = 0; i < data.length; i++) {
             var specieslist = data[i];
@@ -58,6 +61,22 @@ function loadSpeciesLists(){
                             value = kvpValue.vocabValue;
                         }
                         content += "<tr><td>" + (kvpValue.key + "</td><td>" + value + "</td></tr>");
+
+                        //check whether to add to headline for species
+                        $.each(listHeadlines, function (idx, listHeadline) {
+                            if (specieslist.dataResourceUid + ':' + kvpValue.key == listHeadline && value && !addedToHeadline[idx]) { //for when listHeadline=[dataset]:[key] to show key value for the species list
+                                var sppListHeaderHTML = "<h5 class='inline-head'><strong>" + kvpValue.key + ":</strong> ";
+                                sppListHeaderHTML += "<span class='species-headline-" + kvpValue.key + "'>" + value + "</span>";
+                                sppListHeaderHTML += "</h5>";
+                                $(sppListHeaderHTML).appendTo(".header-inner");
+                                addedToHeadline[idx] = true;
+                            } else if (specieslist.dataResourceUid == listHeadline && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
+                                var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadlines[i] + "'>" + specieslist.list.listName;
+                                sppListHeaderHTML += "</h5>";
+                                $(sppListHeaderHTML).appendTo(".header-inner");
+                                addedToHeadline[idx] = true;
+                            }
+                        });
                     });
                     content += "</table>";
                     $description.find(".content").html(content);
