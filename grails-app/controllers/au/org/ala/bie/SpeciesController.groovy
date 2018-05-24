@@ -33,6 +33,9 @@ class SpeciesController {
     def biocacheService
     def authService
 
+    def allResultsGuids = []
+    def allResultsOccurrenceRecords = 0
+
     def geoSearch = {
 
         def searchResults = []
@@ -107,6 +110,7 @@ class SpeciesController {
             log.error "Error requesting taxon concept object: " + searchResults.error
             render(view: '../error', model: [message: searchResults.error])
         } else {
+            getAllResults() // TODO its horrible to call twice, once for single page and once for all results
             render(view: 'search', model: [
                     searchResults: searchResults?.searchResults,
                     facetMap: utilityService.addFacetMap(filterQuery),
@@ -116,8 +120,8 @@ class SpeciesController {
                     isAustralian: false,
                     collectionsMap: utilityService.addFqUidMap(filterQuery),
                     lsids: lsids,
-                    offset: startIndex
-                    // speciesListNames: speciesListNames RR
+                    offset: startIndex,
+                    allResultsOccurrenceRecords: allResultsOccurrenceRecords
             ])
         }
     }
@@ -207,6 +211,51 @@ class SpeciesController {
     def logout = {
         session.invalidate()
         redirect(url:"${params.casUrl}?url=${params.appUrl}")
+    }
+
+    /**
+     * Note, 'all results' means up to the config search.speciesLimit value (which may differ from the page size, obviously)
+     */
+    def getAllResults = {
+        def query = params.q ?: "".trim()
+        if (query == "*") query = ""
+        def filterQuery = params.list('fq') // will be a list even with only one value
+        def startIndex = 0
+        def rows = grailsApplication.config?.search?.speciesLimit ?: 100
+        def sortField = params.sortField ?: (grailsApplication.config?.search?.defaultSortField ?: "")
+        def sortDirection = params.dir ?: (grailsApplication.config?.search?.defaultSortOrder ?: "desc")
+
+        if (params.dir && !params.sortField) {
+            sortField = "score" // default sort (field) of "score" when order is defined on its own
+        }
+
+        def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
+        log.info "SearchRequestParamsDTO = " + requestObj
+        def searchResults = bieService.searchBie(requestObj)
+
+        allResultsGuids = []
+        allResultsOccurrenceRecords = 0
+
+        def sr = searchResults?.searchResults
+        if (sr) {
+            sr.results.each { result ->
+                allResultsGuids << result.guid
+                allResultsOccurrenceRecords += result.occurrenceCount ?: 0
+            }
+        }
+    }
+
+    def occurrences(){
+        def title = "INNS species" //TODO
+        getAllResults()
+
+        def url = biocacheService.performBatchSearch(allResultsGuids, title)
+
+        if(url){
+            redirect(url:url)
+        } else {
+            redirect(controller: "species", action: "search") //TODO: need to pass URL filter params to this?
+        }
     }
 
     private regularise(String guid) {

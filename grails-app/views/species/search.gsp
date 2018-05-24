@@ -167,9 +167,6 @@
                             </g:elseif>
                             <g:else>
                                 <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
-                                    %{-- <g:if test="${fieldResult.label =~ /dr\d+/}">
-                                        get name from ${speciesListNames[]}
-                                    </g:if> --}%
                                     <g:message code="${facetResult.fieldName}.${fieldResult.label}"
                                                default="${fieldResult.label ?: "[unknown]"}"/>
                                 </a>
@@ -287,9 +284,18 @@
                                     <g:each var="fieldToDisplay"
                                             in="${grailsApplication.config.additionalResultsFields.split(",")}">
                                         <g:if test='${result."${fieldToDisplay}"}'>
-                                            <p class="summary-info"><strong><g:message code="${fieldToDisplay}"
-                                                                               default="${fieldToDisplay}"/>:</strong> ${result."${fieldToDisplay}"}
-                                            </p>
+                                            <g:if test='${result."${fieldToDisplay}" instanceof Collection}'>
+                                                <g:each var="fieldVal" in="${result."${fieldToDisplay}"}">
+                                                    <p class="summary-info"><strong><g:message code="${fieldToDisplay}" default="${fieldToDisplay}"/>:</strong>
+                                                    ${fieldVal}
+                                                    </p>
+                                                </g:each>
+                                            </g:if>
+                                            <g:else>
+                                                <p class="summary-info"><strong><g:message code="${fieldToDisplay}" default="${fieldToDisplay}"/>:</strong>
+                                                ${result."${fieldToDisplay}"}
+                                                </p>
+                                            </g:else>
                                         </g:if>
                                     </g:each>
                                 </g:if>
@@ -553,6 +559,8 @@ var colours = [/* colorUtil */ "8B0000", "FF0000", "CD5C5C", "E9967A", "8B4513",
             "FFFF66", "9900FF", "00FF99", "333399", "99FFCC", "666600", "33CCFF", "006666", "0000CC", "6600CC", "CCCC99", "FF9999", "99CC66"
 			];
 
+var occurrenceCountPage = 0;
+
 function loadMap() {
 
     var prms = {
@@ -570,14 +578,13 @@ function loadMap() {
 
 
     var taxonLayer = [];
-    var occurrenceCount = 0;
+
     <g:each status="i" var="result" in="${searchResults.results}">
         if (${result.occurrenceCount ?: 0} > 0) {
             prms["ENV"] = SHOW_CONF.mapEnvOptions + ";color:" + colours[${i}];
             taxonLayer[${i}] = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
                 "${result.guid}" + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter, prms);
             taxonLayer[${i}].addTo(speciesLayers);
-            occurrenceCount += ${result.occurrenceCount ?: 0};
         }
     </g:each>
 
@@ -669,7 +676,7 @@ function loadMap() {
     //SHOW_CONF.map.on('click', onMapClick);
     SHOW_CONF.map.invalidateSize(false);
 
-    $('#occurrenceRecordCount').html(occurrenceCount.toLocaleString());
+    $('#occurrenceRecordCount').html(occurrenceCountPage.toLocaleString());
     $('#speciesCount').html(Object.keys(speciesLayers._layers).length);
 
     fitMapToBounds();
@@ -786,7 +793,6 @@ function tagResults() {
                 if ($.inArray(lsid, lsidsOnPage) > -1) {
                     var linkTag = "species/" + lsid;
                     var addTagsTo = $('h3 a[href$="' + linkTag + '"]');
-                    //$("<span>&nbsp;<b>Alert!</b></span>").insertAfter(addTagsTo);
                     var tagHTML = $("<div/>").html(SHOW_CONF.resultSppListTagHTML).text();
                     $(tagHTML).insertAfter(addTagsTo);
                 }
@@ -795,7 +801,19 @@ function tagResults() {
     }
 }
 
+function countPageOccurrences() {
+    <g:each status="i" var="result" in="${searchResults.results}">
+        if (${result.occurrenceCount ?: 0} > 0) {
+            occurrenceCountPage += ${result.occurrenceCount ?: 0};
+        }
+    </g:each>
+}
+
 tagResults();
+countPageOccurrences();
+
+injectBiocacheResultsActual(${allResultsOccurrenceRecords}, ${grailsApplication.config?.search?.speciesLimit ?: 100});
+
 
 <g:if test="${grailsApplication.config?.search?.mapResults == 'true'}">
     var firstMapShow = true;

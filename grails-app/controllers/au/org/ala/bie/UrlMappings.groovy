@@ -12,6 +12,7 @@ class UrlMappings {
         "/geo"(controller: "species", action: "geoSearch")
         "/species/$guid**"(controller: "species", action: "show")
         "/search"(controller: "species", action: "search")
+        "/occurrences"(controller: "species", action: "occurrences") // RR added
         "/image-search"(controller: "species", action: "imageSearch")
         "/image-search/showSpecies"(controller: "species", action: "imageSearch")
         "/image-search/infoBox"(controller: "species", action: "infoBox")

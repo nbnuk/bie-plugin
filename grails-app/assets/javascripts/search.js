@@ -43,7 +43,8 @@ $(document).ready(function() {
 
     // AJAX search results
     //injectBhlResults();
-    injectBiocacheResults();
+    //injectBiocacheResults();
+    //injectBiocacheResultsActual();
 
     // in mobile view toggle display of facets
     $("#toggleFacetDisplay").click(function() {
@@ -183,6 +184,21 @@ function injectBiocacheResults() {
             insertSearchLinks(html);
         }
     });
+}
+
+function injectBiocacheSearch(lsids, recsTot) {
+    var biocacheContextUnencoded = $('<textarea />').html(SEARCH_CONF.biocacheQueryContext).text(); //to convert e.g. &quot; back to "
+    var url = SEARCH_CONF.biocacheUrl + "/occurrences/search?q=lsid:(" + lsids + ")&qc=" + biocacheContextUnencoded;
+    var html = "<li data-count=\"" + recsTot + "\"><a href=\"" + url + "\" id=\"biocacheSearchLink\">Occurrence records</a> (" + numberWithCommas(recsTot) + ")</li>";
+    insertSearchLinks(html);
+}
+
+function injectBiocacheResultsActual(recsTot, limitSpp) {
+    var q = $.getQueryParam('q') ? $.getQueryParam('q') : SEARCH_CONF.query ;
+    var fqList = $.getQueryParam('fq');
+    var url = SEARCH_CONF.bieUrl + "/occurrences?q=" + q + (fqList? "&fq=" + fqList.join("&fq=") : "");
+    var html = "<li data-count=\"" + recsTot + "\"><a href=\"" + url + "\" id=\"biocacheSearchLink\" title='View occurrences for up to " + limitSpp + " species'>Occurrence records</a> (" + numberWithCommas(recsTot) + ")</li>";
+    insertSearchLinks(html);
 }
 
 function insertSearchLinks(html) {
