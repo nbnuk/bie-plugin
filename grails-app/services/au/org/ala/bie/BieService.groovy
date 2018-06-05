@@ -30,6 +30,31 @@ class BieService {
         JSON.parse(json)
     }
 
+    //additional filter on occurrence records to get different occurrrenceCount values for e.g. occurrence_status:absent records
+    def searchBieOccFilter(SearchRequestParamsDTO requestObj, String occFilter) {
+
+        def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
+                "&facets=" + grailsApplication.config.facets
+        queryUrl += "&q.op=OR"
+
+        //add a query context for BIE - to reduce taxa to a subset
+        if(grailsApplication.config.bieService.queryContext){
+            queryUrl = queryUrl + "&" + grailsApplication.config.bieService.queryContext.replaceAll(" ","%20")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
+        }
+
+        //add a query context for biocache - this will influence record counts
+        if(grailsApplication.config.biocacheService.queryContext){
+            //watch out for mutually exclusive conditions between queryContext and occFilter, e.g. if queryContext=occurrence_status:present and occFilter=occurrence_stats:absent then will get zero records returned
+            queryUrl = queryUrl + "&bqc=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ","%20") + "%20AND%20" + occFilter.replaceAll(" ", "%20") + ")"
+        } else {
+            queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20") + ")"
+        }
+
+        log.info("queryUrlOccFilter = " + queryUrl)
+        def json = webService.get(queryUrl)
+        JSON.parse(json)
+    }
+
     def getSpeciesList(guid){
         if(!guid){
             return null
@@ -99,4 +124,33 @@ class BieService {
             return json
         }
     }
+
+    def getOccurrenceCountsForGuid(guid, presenceOrAbsence) {
+        //var mapContextUnencoded = $('<textarea />').html(MAP_CONF.mapQueryContext).text();
+        //to convert e.g. &quot; back to "
+
+        def url = grailsApplication.config.biocacheService.baseURL + '/occurrences/taxaCount?guids=' + guid.replaceAll(/\s+/, '+')
+
+        if (grailsApplication.config.biocacheService.queryContext) {
+            url = url + "&fq=" + URLEncoder.encode(grailsApplication.config.biocacheService.queryContext, "UTF-8")
+            //encode or decode?? TODO
+        }
+        if (presenceOrAbsence == 'presence') {
+            url = url + "&fq=-occurrence_status:absent"
+        } else if (presenceOrAbsence == 'absence') {
+            url = url + "&fq=occurrence_status:absent"
+        }
+
+        def json = webService.get(url)
+        try{
+            def response = JSON.parse(json)
+            Iterator<?> keys = response.keys();
+            String key = (String) keys.next()
+            response.get(key)
+        } catch (Exception e){
+            log.warn "Problem retrieving occurrence information for Taxon: " + guid
+            null
+        }
+    }
+
 }

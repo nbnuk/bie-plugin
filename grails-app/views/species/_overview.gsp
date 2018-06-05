@@ -39,8 +39,16 @@
                                 <li>
                                     <g:if test="${cs.value.dr}">
                                         <a href="${collectoryUrl}/public/show/${cs.value.dr}"><span
-                                                class="iucn <bie:colourForStatus
-                                                        status="${cs.value.status}"/>">${cs.key}</span>${cs.value.status}
+                                            class="iucn <bie:colourForStatus
+                                                    status="${cs.value.status}"/>">${cs.key}</span>
+                                        <g:if test="${cs.value.status instanceof Collection}">
+                                            <g:each var="csVal" in="${cs.value.status}">
+                                                ${csVal}<br/>
+                                            </g:each>
+                                        </g:if>
+                                        <g:else>
+                                            ${cs.value.status}
+                                        </g:else>
                                         <!-- cs = ${cs} -->
                                         </a>
                                     </g:if>
@@ -79,7 +87,14 @@
                 <p class="mapAttribution">Compiled distribution map provided by <span id="dataResource">[data resource not known]</span></p>
             </div>
             <div class="taxon-map">
-                <h3><span class="occurrenceRecordCount">0</span> presence records <span class="occurrenceRecordCountAll"></span></h3>
+                <h3><span id="occurrenceRecordCount">0</span> records
+                    <span id="occurrenceRecordCountAll"></span>
+                </h3>
+                <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+                    <span id="toggleMapPresenceAbsence" style="float:right; margin-top:-2.2em;border:1px solid #ddd; padding:2px; padding-left: 5px; padding-right: 5px; cursor:pointer">
+                        Showing: presence records
+                    </span>
+                </g:if>
                 <g:if test="${message(code:'overview.map.button.records.map.subtitle', default:'')}">
                     <p>${g.message(code:'overview.map.button.records.map.subtitle')}</p>
                 </g:if>

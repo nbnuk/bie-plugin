@@ -34,7 +34,10 @@ class SpeciesController {
     def authService
 
     def allResultsGuids = []
-    def allResultsOccurrenceRecords = 0
+    def allResultsOccs = 0
+    def pageResultsOccs = 0
+    def pageResultsOccsPresence = 0
+    def pageResultsOccsAbsence = 0
 
     def geoSearch = {
 
@@ -85,6 +88,12 @@ class SpeciesController {
         def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
         log.info "SearchRequestParamsDTO = " + requestObj
         def searchResults = bieService.searchBie(requestObj)
+        def searchResultsPresence
+        def searchResultsAbsence
+        if ((grailsApplication.config?.search?.mapPresenceAndAbsence?:"") == "true") {
+            searchResultsPresence = bieService.searchBieOccFilter(requestObj, "-occurrence_status:absent")
+            searchResultsAbsence = bieService.searchBieOccFilter(requestObj, "occurrence_status:absent")
+        }
 
         def lsids = ""
         def sr = searchResults?.searchResults
@@ -110,9 +119,11 @@ class SpeciesController {
             log.error "Error requesting taxon concept object: " + searchResults.error
             render(view: '../error', model: [message: searchResults.error])
         } else {
-            getAllResults() // TODO its horrible to call twice, once for single page and once for all results
+            setResultStats(searchResults, searchResultsPresence, searchResultsAbsence)
             render(view: 'search', model: [
                     searchResults: searchResults?.searchResults,
+                    searchResultsPresence: searchResultsPresence?.searchResults,
+                    searchResultsAbsence: searchResultsAbsence?.searchResults,
                     facetMap: utilityService.addFacetMap(filterQuery),
                     query: query?.trim(),
                     filterQuery: filterQuery,
@@ -121,7 +132,10 @@ class SpeciesController {
                     collectionsMap: utilityService.addFqUidMap(filterQuery),
                     lsids: lsids,
                     offset: startIndex,
-                    allResultsOccurrenceRecords: allResultsOccurrenceRecords
+                    allResultsOccurrenceRecords: allResultsOccs,
+                    pageResultsOccurrenceRecords: pageResultsOccs,
+                    pageResultsOccurrencePresenceRecords: pageResultsOccsPresence,
+                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence
             ])
         }
     }
@@ -159,9 +173,27 @@ class SpeciesController {
         } else if (taxonDetails.taxonConcept?.guid && taxonDetails.taxonConcept.guid != guid) {
             // old identifier so redirect to current taxon page
             redirect(uri: "/species/${taxonDetails.taxonConcept.guid}")
+
         } else {
+
+            if ((grailsApplication.config?.search?.mapPresenceAndAbsence?:"") == "true") {
+                pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence")
+                pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence")
+                allResultsOccs = pageResultsOccs = pageResultsOccsPresence + pageResultsOccsAbsence
+            } else {
+                allResultsOccs = pageResultsOccs = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all")
+            }
+            def jsonSlurper = new JsonSlurper()
+            //fake up a search results JSON object to look like that returned for species search list jsonSlurper.parseText(
+            def searchResults = '{ "results": [{"occurrenceCount":"' + allResultsOccs + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"xxxx"}] }'
+            def searchResultsPresence = '{ "results": [{"occurrenceCount":"' + pageResultsOccsPresence + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
+            def searchResultsAbsence = '{ "results": [{"occurrenceCount":"' + pageResultsOccsAbsence + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
+
             render(view: 'show', model: [
                     tc: taxonDetails,
+                    searchResults: searchResults,
+                    searchResultsPresence: searchResultsPresence,
+                    searchResultsAbsence: searchResultsAbsence,
                     statusRegionMap: utilityService.getStatusRegionCodes(),
                     infoSourceMap:[],
                     textProperties: [],
@@ -173,7 +205,11 @@ class SpeciesController {
                     sortCommonNameSources: utilityService.getNamesAsSortedMap(taxonDetails.commonNames),
                     taxonHierarchy: bieService.getClassificationForGuid(taxonDetails.taxonConcept.guid),
                     childConcepts: bieService.getChildConceptsForGuid(taxonDetails.taxonConcept.guid),
-                    speciesList: bieService.getSpeciesList(taxonDetails.taxonConcept?.guid?:guid)
+                    speciesList: bieService.getSpeciesList(taxonDetails.taxonConcept?.guid?:guid),
+                    allResultsOccurrenceRecords: allResultsOccs,
+                    pageResultsOccurrenceRecords: pageResultsOccs,
+                    pageResultsOccurrencePresenceRecords: pageResultsOccsPresence,
+                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence
             ])
         }
     }
@@ -214,40 +250,68 @@ class SpeciesController {
     }
 
     /**
-     * Note, 'all results' means up to the config search.speciesLimit value (which may differ from the page size, obviously)
+     * Note, 'all results' means up to the config search.speciesLimit value (which may differ from the page size)
      */
-    def getAllResults = {
-        def query = params.q ?: "".trim()
-        if (query == "*") query = ""
-        def filterQuery = params.list('fq') // will be a list even with only one value
-        def startIndex = 0
-        def rows = grailsApplication.config?.search?.speciesLimit ?: 100
-        def sortField = params.sortField ?: (grailsApplication.config?.search?.defaultSortField ?: "")
-        def sortDirection = params.dir ?: (grailsApplication.config?.search?.defaultSortOrder ?: "desc")
-
-        if (params.dir && !params.sortField) {
-            sortField = "score" // default sort (field) of "score" when order is defined on its own
-        }
-
-        def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
-        log.info "SearchRequestParamsDTO = " + requestObj
-        def searchResults = bieService.searchBie(requestObj)
-
+    def setResultStats (pageResults, searchResultsPresence, searchResultsAbsence) {
         allResultsGuids = []
-        allResultsOccurrenceRecords = 0
+        allResultsOccs = 0
+        pageResultsOccs = 0
+        pageResultsOccsPresence = 0
+        pageResultsOccsAbsence = 0
 
-        def sr = searchResults?.searchResults
+        def sr
+        def rows = grailsApplication.config?.search?.speciesLimit ?: 100
+        if ((pageResults?.totalRecords ?: 0) > rows.toInteger()) { //must load all results
+            // its horrible to call twice, once for single page and once for all results, but that seems to be what we have to do
+            def query = params.q ?: "".trim()
+            if (query == "*") query = ""
+            def filterQuery = params.list('fq') // will be a list even with only one value
+            def startIndex = 0
+
+            def sortField = params.sortField ?: (grailsApplication.config?.search?.defaultSortField ?: "")
+            def sortDirection = params.dir ?: (grailsApplication.config?.search?.defaultSortOrder ?: "desc")
+
+            if (params.dir && !params.sortField) {
+                sortField = "score" // default sort (field) of "score" when order is defined on its own
+            }
+
+            def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
+            log.info "SearchRequestParamsDTO = " + requestObj
+            def searchResults = bieService.searchBie(requestObj)
+
+            sr = searchResults?.searchResults
+        } else {
+            sr = pageResults?.searchResults
+        }
         if (sr) {
             sr.results.each { result ->
                 allResultsGuids << result.guid
-                allResultsOccurrenceRecords += result.occurrenceCount ?: 0
+                allResultsOccs += result.occurrenceCount
+            }
+        }
+        sr = pageResults?.searchResults
+        if (sr) {
+            sr.results.each { result ->
+                pageResultsOccs += result.occurrenceCount
+            }
+        }
+        sr = searchResultsPresence?.searchResults
+        if (sr) {
+            sr.results.each { result ->
+                pageResultsOccsPresence += result.occurrenceCount
+            }
+        }
+        sr = searchResultsAbsence?.searchResults
+        if (sr) {
+            sr.results.each { result ->
+                pageResultsOccsAbsence += result.occurrenceCount
             }
         }
     }
 
     def occurrences(){
         def title = "INNS species" //TODO
-        getAllResults()
+        //getAllResults()
 
         def url = biocacheService.performBatchSearch(allResultsGuids, title)
 

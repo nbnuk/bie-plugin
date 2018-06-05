@@ -18,7 +18,6 @@ function showSpeciesPage() {
 
     //load content
     loadOverviewImages();
-    loadMap();
     loadGalleries();
     loadExpertDistroMap();
     loadExternalSources();
@@ -30,12 +29,14 @@ function showSpeciesPage() {
     addAlerts();
     // loadBhl(); // now an external link to BHL
     //loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName,'trove-integration','trove-result-list','previousTrove','nextTrove');
+
+    if (SHOW_CONF.speciesShowNNSSlink == "true") addNNSSlink();
 }
 
+//loads list membership and KVP details under 'Datasets' section, and also adds any headline items to subtitle
 function loadSpeciesLists(){
-
     //console.log('### loadSpeciesLists #### ' + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid);
-    var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split(","); //TODO: what if bad embedded HTMl characters? what if key contains comma?
+    var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split("|"); //TODO: what if bad embedded HTMl characters? what if key contains pipe mark?
     var addedToHeadline = [];
     $.each(listHeadlines, function (idx, listHeadline) {addedToHeadline[idx] = false;}); //only allow first species list kvp to match a given headline and be included in the headline area
     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
@@ -66,12 +67,12 @@ function loadSpeciesLists(){
                         $.each(listHeadlines, function (idx, listHeadline) {
                             if (specieslist.dataResourceUid + ':' + kvpValue.key == listHeadline && value && !addedToHeadline[idx]) { //for when listHeadline=[dataset]:[key] to show key value for the species list
                                 var sppListHeaderHTML = "<h5 class='inline-head'><strong>" + kvpValue.key + ":</strong> ";
-                                sppListHeaderHTML += "<span class='species-headline-" + kvpValue.key + "'>" + value + "</span>";
+                                sppListHeaderHTML += "<span class='species-headline-" + listHeadline + '-' + kvpValue.key + "'>" + value + "</span>";
                                 sppListHeaderHTML += "</h5>";
                                 $(sppListHeaderHTML).appendTo(".header-inner");
                                 addedToHeadline[idx] = true;
                             } else if (specieslist.dataResourceUid == listHeadline && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
-                                var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadlines[i] + "'>" + specieslist.list.listName;
+                                var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadline + "'>" + specieslist.list.listName;
                                 sppListHeaderHTML += "</h5>";
                                 $(sppListHeaderHTML).appendTo(".header-inner");
                                 addedToHeadline[idx] = true;
@@ -82,6 +83,14 @@ function loadSpeciesLists(){
                     $description.find(".content").html(content);
                 } else {
                     $description.find(".content").html("A species list provided by " + specieslist.list.listName);
+                    $.each(listHeadlines, function (idx, listHeadline) {
+                        if (specieslist.dataResourceUid == listHeadline && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
+                            var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadline + "'>" + specieslist.list.listName;
+                            sppListHeaderHTML += "</h5>";
+                            $(sppListHeaderHTML).appendTo(".header-inner");
+                            addedToHeadline[idx] = true;
+                        }
+                    });
                 }
 
                 $description.find(".source").css({'display':'none'});
@@ -113,320 +122,7 @@ function addAlerts(){
     });
 }
 
-function loadMap() {
 
-    if(SHOW_CONF.map != null){
-        return;
-    }
-    var prms = {
-        layers: 'ALA:occurrences',
-        format: 'image/png',
-        transparent: true,
-        attribution: SHOW_CONF.mapAttribution,
-        bgcolor: "0x000000",
-        outline: SHOW_CONF.mapOutline
-    };
-
-    var speciesLayers = new L.LayerGroup();
-
-    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
-    if (SHOW_CONF.mapLayersFqs != '') { // additional FQ criteria for each map layer
-        fqsArr = SHOW_CONF.mapLayersFqs.split("|");
-        coloursArr = SHOW_CONF.mapLayersColours.split("|");
-        var prmsLayer = [];
-        var taxonLayer = [];
-        var htmlEntityDecoder = document.createElement('textarea');
-        for (i = 0; i < fqsArr.length; i++) {
-            prmsLayer[i] = $.extend({}, prms);
-            prmsLayer[i]["ENV"] = SHOW_CONF.mapEnvOptions + ";color:" + coloursArr[i];
-            htmlEntityDecoder.innerHTML = fqsArr[i];
-            taxonLayer[i] = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-                SHOW_CONF.guid + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter +
-                "&fq=" + htmlEntityDecoder.value, prmsLayer[i]);
-            taxonLayer[i].addTo(speciesLayers);
-        }
-    } else {
-        prms["ENV"] = SHOW_CONF.mapEnvOptions;
-        var taxonLayer = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-            SHOW_CONF.guid + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter, prms);
-        taxonLayer.addTo(speciesLayers);
-    }
-
-    var ColourByControl = L.Control.extend({
-        options: {
-            position: 'topright',
-            collapsed: false
-        },
-        onAdd: function (map) {
-            // create the control container with a particular class name
-            var $controlToAdd = $('.colourbyTemplate').clone();
-            var container = L.DomUtil.create('div', 'leaflet-control-layers');
-            var $container = $(container);
-            $container.attr("id","colourByControl");
-            $container.attr('aria-haspopup', true);
-            $container.html($controlToAdd.html());
-            return container;
-        }
-    });
-
-
-    SHOW_CONF.map = L.map('leafletMap', {
-        center: [SHOW_CONF.defaultDecimalLatitude, SHOW_CONF.defaultDecimalLongitude],
-        zoom: SHOW_CONF.defaultZoomLevel,
-        layers: [speciesLayers],
-        scrollWheelZoom: false
-    });
-
-    var defaultBaseLayer = L.tileLayer(SHOW_CONF.defaultMapUrl, {
-        attribution: SHOW_CONF.defaultMapAttr,
-        subdomains: SHOW_CONF.defaultMapDomain,
-        mapid: SHOW_CONF.defaultMapId,
-        token: SHOW_CONF.defaultMapToken
-    });
-
-    defaultBaseLayer.addTo(SHOW_CONF.map);
-
-    var baseLayers = {
-        "Base layer": defaultBaseLayer
-    };
-
-    var sciName = SHOW_CONF.scientificName;
-
-    var overlays = {};
-    if (SHOW_CONF.mapLayersFqs != '') { // additional FQ criteria for each map layer
-        labelsArr = SHOW_CONF.mapLayersLabels.split("|");
-        for (i = 0; i < taxonLayer.length; i++) {
-            overlays[sciName + ": " + labelsArr[i]] = taxonLayer[i];
-        }
-        L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
-    } else {
-        overlays[sciName] = taxonLayer;
-        L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
-    }
-
-    SHOW_CONF.map.addControl(new ColourByControl());
-
-    $('.colour-by-control').click(function(e){
-        if($(this).parent().hasClass('leaflet-control-layers-expanded')){
-            $(this).parent().removeClass('leaflet-control-layers-expanded');
-            $('.colour-by-legend-toggle').show();
-        } else {
-            $(this).parent().addClass('leaflet-control-layers-expanded');
-            $('.colour-by-legend-toggle').hide();
-        }
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-
-    $('.colour-by-control').parent().addClass('leaflet-control-layers-expanded');
-    $('.colour-by-legend-toggle').hide();
-
-    $('#colourByControl').mouseover(function(e){
-        //console.log('mouseover');
-        SHOW_CONF.map.dragging.disable();
-        SHOW_CONF.map.off('click', pointLookupClickRegister);
-    });
-
-    $('#colourByControl').mouseout(function(e){
-        //console.log('mouseout');
-        SHOW_CONF.map.dragging.enable();
-        SHOW_CONF.map.on('click', pointLookupClickRegister);
-    });
-
-    $('.hideColourControl').click(function(e){
-        //console.log('hideColourControl');
-        $('#colourByControl').removeClass('leaflet-control-layers-expanded');
-        $('.colour-by-legend-toggle').show();
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-
-    //SHOW_CONF.map.on('click', onMapClick);
-    SHOW_CONF.map.invalidateSize(false);
-
-    updateOccurrenceCount();
-    fitMapToBounds();
-
-    if( SHOW_CONF.mapEnvOptions.indexOf("colormode:") >= 0 || SHOW_CONF.mapLayersLabels != '') {
-        var mapOptArr = SHOW_CONF.mapEnvOptions.split(";");
-        var legendQ = '';
-        for (var i = 0; i < mapOptArr.length; i++) {
-            if (mapOptArr[i].indexOf('colormode:') == 0) {
-                legendQ = mapOptArr[i].substring('colormode:'.length);
-                break;
-            }
-        }
-        $('.legendTable').html('');
-        $(".legendTable")
-            .append($('<tr>')
-                .append($('<td>')
-                    .addClass('legendTitle')
-                    .html(SHOW_CONF.mapEnvLegendTitle + ":")
-                )
-            );
-
-        if (legendQ != '') {
-            var legendUrl = SHOW_CONF.biocacheUrl + "/occurrence/legend?q=lsid:" + SHOW_CONF.guid + "&cm=" + legendQ + "&type=application/json";
-            //console.log(legendUrl);
-            $.ajax({
-                url: legendUrl,
-                success: function (data) {
-
-                    $.each(data, function (index, legendDef) {
-                        var legItemName = legendDef.name ? legendDef.name : 'Not specified';
-                        addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, '', SHOW_CONF.mapEnvLegendHideMax);
-                    });
-                }
-            });
-        } else if (SHOW_CONF.mapLayersLabels != '') {
-            //use predefined legend entries and colours
-            var mapLabelsArr = SHOW_CONF.mapLayersLabels.split("|");
-            var mapColoursArr = SHOW_CONF.mapLayersColours.split("|");
-            for (var i = 0; i < mapLabelsArr.length; i++) {
-                addLegendItem(mapLabelsArr[i], 0, 0, 0, mapColoursArr[i], false); //use rgbhex and full label provided
-            }
-        } else {
-            $('#colourByControl').hide();
-        }
-    }
-}
-
-var clickCount = 0;
-
-/**
- * Fudge to allow double clicks to propagate to map while allowing single clicks to be registered
- *
- */
-function pointLookupClickRegister(e) {
-    clickCount += 1;
-    if (clickCount <= 1) {
-        setTimeout(function() {
-            if (clickCount <= 1) {
-                pointLookup(e);
-            }
-            clickCount = 0;
-        }, 400);
-    }
-}
-
-function addLegendItem(name, red, green, blue, rgbhex, hiderangemax){
-    var isoDateRegEx = /^(\d{4})-\d{2}-\d{2}T.*/; // e.g. 2001-02-31T12:00:00Z with year capture
-
-    if (name.search(isoDateRegEx) > -1) {
-        // convert full ISO date to YYYY-MM-DD format
-        name = name.replace(isoDateRegEx, "$1");
-    }
-    var startOfRange = name.indexOf(":[");
-    if (startOfRange != -1) {
-        var nameVal = name.substring(startOfRange+1).replace("["," ").replace("]"," ").replace(" TO "," to ").trim();
-        if (hiderangemax) nameVal = nameVal.split(' to ')[0];
-    } else {
-        var nameVal = name;
-    }
-    var legendText = (nameVal);
-
-    $(".legendTable")
-        .append($('<tr>')
-            .append($('<td>')
-                .append($('<i>')
-                    .addClass('legendColour')
-                    .attr('style', "background-color:" + (rgbhex!=''? "#" + rgbhex : "rgb("+ red +","+ green +","+ blue + ")") + ";")
-                )
-                .append($('<span>')
-                    .addClass('legendItemName')
-                    .html(legendText)
-                )
-            )
-        );
-}
-
-
-/**
- * Update the total records count for the occurrence map in heading text
- */
-function updateOccurrenceCount() {
-    var recsAll = -1;
-    var recsPresence = -1;
-    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
-    $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + mapContextUnencoded + "&fq=-occurrence_status:absent", function( data ) {
-        if (data) {
-            $.each( data, function( key, value ) {
-                if (recsPresence < 0) {
-                    if (value && typeof value == "number") {
-                        recsPresence = value;
-                        $('.occurrenceRecordCount').html(recsPresence.toLocaleString());
-                    }
-                }
-            });
-        }
-    });
-
-    //if biocacheService.queryContext already removes absence records then don't bother with full count
-    if(SHOW_CONF.mapQueryContext.indexOf("-occurrence_status:absent") == -1) {
-        $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + mapContextUnencoded, function( data ) {
-            if (data) {
-                $.each( data, function( key, value ) {
-                    if (recsAll < 0) {
-                        if (value && typeof value == "number") {
-                            recsAll = value;
-                            if (recsPresence != recsAll) {
-                                $('.occurrenceRecordCountAll').html("(" + recsAll.toLocaleString() + " in total)");
-                            }
-                        }
-                    }
-                });
-            }
-        });
-    }
-}
-
-function fitMapToBounds() {
-    var jsonUrl = SHOW_CONF.biocacheServiceUrl + "/mapping/bounds.json?q=lsid:" + SHOW_CONF.guid + "&callback=?";
-    $.getJSON(jsonUrl, function(data) {
-        if (data.length == 4 && data[0] != 0 && data[1] != 0) {
-            //console.log("data", data);
-            var sw = L.latLng(data[1],data[0]);
-            var ne = L.latLng(data[3],data[2]);
-            //console.log("sw", sw.toString());
-            var dataBounds = L.latLngBounds(sw, ne);
-            //var centre = dataBounds.getCenter();
-            var mapBounds = SHOW_CONF.map.getBounds();
-
-            if (!mapBounds.contains(dataBounds) && !mapBounds.intersects(dataBounds)) {
-                SHOW_CONF.map.fitBounds(dataBounds);
-                if (SHOW_CONF.map.getZoom() > 3) {
-                    SHOW_CONF.map.setZoom(3);
-                }
-            }
-            
-            SHOW_CONF.map.invalidateSize(true);
-        }
-    });
-}
-
-//function onMapClick(e) {
-//    $.ajax({
-//        url: SHOW_CONF.biocacheServiceUrl + "/occurrences/info",
-//        jsonp: "callback",
-//        dataType: "jsonp",
-//        data: {
-//            q: SHOW_CONF.scientificName,
-//            zoom: "6",
-//            lat: e.latlng.lat,
-//            lon: e.latlng.lng,
-//            radius: 20,
-//            format: "json"
-//        },
-//        success: function (response) {
-//            var popup = L.popup()
-//                .setLatLng(e.latlng)
-//                .setContent("Occurrences at this point: " + response.count)
-//                .openOn(SHOW_CONF.map);
-//        }
-//    });
-//}
 
 function loadDataProviders(){
 
@@ -1111,4 +807,17 @@ function collapseImageGallery(btn) {
 
         $(btn).parents('.image-section').find('.taxon-gallery').slideUp(400)
     }
+}
+
+function addNNSSlink() {
+    //opens in new tab. Haven't found a clean way of respecting user instructions on same or new tab opening for a form post
+    var NNSSform = "<form method='post' action='http://www.nonnativespecies.org/factsheet/index.cfm' id='NNSSform' target='_blank'>" +
+        "<input type='hidden' value='" + (SHOW_CONF.scientificName).replace(/'/g, '') + "' name='query'>" +
+        "</form>" +
+        "<a id='NNSSform_submit' href='#'>NNSS</a>";
+    $(".panel-resources ul").append('<li id="NNSSform_link">' + NNSSform + '&nbsp;<img src="/assets/newtab.gif"/></li>');
+    $("#NNSSform_submit").click(function() {
+        $("#NNSSform").submit();
+        return false;
+    });
 }
