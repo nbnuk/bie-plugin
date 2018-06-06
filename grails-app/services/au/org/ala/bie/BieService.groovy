@@ -30,7 +30,7 @@ class BieService {
         JSON.parse(json)
     }
 
-    //additional filter on occurrence records to get different occurrrenceCount values for e.g. occurrence_status:absent records
+    //additional filter on occurrence records to get different occurrenceCount values for e.g. occurrence_status:absent records
     def searchBieOccFilter(SearchRequestParamsDTO requestObj, String occFilter) {
 
         def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
@@ -126,21 +126,21 @@ class BieService {
     }
 
     def getOccurrenceCountsForGuid(guid, presenceOrAbsence) {
-        //var mapContextUnencoded = $('<textarea />').html(MAP_CONF.mapQueryContext).text();
-        //to convert e.g. &quot; back to "
 
         def url = grailsApplication.config.biocacheService.baseURL + '/occurrences/taxaCount?guids=' + guid.replaceAll(/\s+/, '+')
 
         if (grailsApplication.config.biocacheService.queryContext) {
-            url = url + "&fq=" + URLEncoder.encode(grailsApplication.config.biocacheService.queryContext, "UTF-8")
-            //encode or decode?? TODO
+            url = url + "&fq=" + grailsApplication.config.biocacheService.queryContext.replaceAll(" ","%20")
         }
+        if (grailsApplication.config?.additionalMapFilter) {
+            url = url + "&" + grailsApplication.config.additionalMapFilter.replaceAll(" ","%20")
+        }
+
         if (presenceOrAbsence == 'presence') {
             url = url + "&fq=-occurrence_status:absent"
         } else if (presenceOrAbsence == 'absence') {
             url = url + "&fq=occurrence_status:absent"
         }
-
         def json = webService.get(url)
         try{
             def response = JSON.parse(json)

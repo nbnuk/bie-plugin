@@ -375,20 +375,7 @@
         scholarUrl:         "${createLink(controller: 'externalSite', action: 'scholar', params: [s: tc?.taxonConcept?.nameString ?: ''])}",
         soundUrl:           "${createLink(controller: 'species', action: 'soundSearch', params: [s: tc?.taxonConcept?.nameString ?: ''])}",
         eolLanguage:        "${grailsApplication.config.eol.lang}",
-        defaultDecimalLatitude: ${grailsApplication.config.defaultDecimalLatitude},
-        defaultDecimalLongitude: ${grailsApplication.config.defaultDecimalLongitude},
-        defaultZoomLevel: ${grailsApplication.config.defaultZoomLevel},
-        mapAttribution: "${raw(grailsApplication.config.skin.orgNameLong)}",
-        defaultMapUrl: "${grailsApplication.config.map.default.url}",
-        defaultMapAttr: "${raw(grailsApplication.config.map.default.attr)}",
-        defaultMapDomain: "${grailsApplication.config.map.default.domain}",
-        defaultMapId: "${grailsApplication.config.map.default.id}",
-        defaultMapToken: "${grailsApplication.config.map.default.token}",
-        recordsMapColour: "${grailsApplication.config.map.records.colour}",
-        mapQueryContext: "${grailsApplication.config.biocacheService.queryContext}",
-        additionalMapFilter: "${raw(grailsApplication.config.additionalMapFilter)}",
         noImage100Url: "${resource(dir: 'images', file: 'noImage100.jpg')}",
-        map: null,
         imageDialog: '${imageViewerType}',
         likeUrl: "${createLink(controller: 'imageClient', action: 'likeImage')}",
         dislikeUrl: "${createLink(controller: 'imageClient', action: 'dislikeImage')}",
@@ -402,18 +389,13 @@
         getPreferredSpeciesListUrl: "${grailsApplication.config.speciesList.baseURL}",
         druid: "${grailsApplication.config.speciesList.preferredSpeciesListDruid}",
         addPreferenceButton: ${imageClient.checkAllowableEditRole()},
-        mapOutline: ${grailsApplication.config.map.outline ?: 'false'},
-        mapEnvOptions: "${grailsApplication.config.map.env?.options?:'color:' + (grailsApplication.config.map?.records?.colour?: 'e6704c')+ ';name:circle;size:4;opacity:0.8'}",
-        mapEnvLegendTitle: "${grailsApplication.config.map.env?.legendtitle?:''}",
-        mapEnvLegendHideMax: "${grailsApplication.config.map.env?.legendhidemaxrange?:false}",
-        mapLayersFqs: "${grailsApplication.config.map.layers?.fqs?:''}",
-        mapLayersLabels: "${grailsApplication.config.map.layers?.labels?:''}",
-        mapLayersColours: "${grailsApplication.config.map.layers?.colours?:''}",
 
         speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}",
         speciesAdditionalHeadlinesSpeciesList: "${grailsApplication.config.species?.additionalHeadlinesSpeciesList?:''}",
         speciesTagIfInList: "${grailsApplication.config.search?.tagIfInList?:''}",
         speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
+        speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
+        speciesListLinks: "${grailsApplication.config.species?.listLinks?:''}",
 
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"
@@ -422,6 +404,7 @@
 var MAP_CONF = {
         mapType:                    "show",
         biocacheServiceUrl:         "${grailsApplication.config.biocacheService.baseURL}",
+        biocacheUrl:                "${grailsApplication.config.biocache.baseURL}",
         allResultsOccurrenceRecords:            ${allResultsOccurrenceRecords},
         pageResultsOccurrenceRecords:           ${pageResultsOccurrenceRecords},
         pageResultsOccurrencePresenceRecords:   ${pageResultsOccurrencePresenceRecords},
@@ -455,20 +438,9 @@ var MAP_CONF = {
         scientificName:             "${tc?.taxonConcept?.nameString ?: ''}"
 }
 
-function loadTheMap () {
-    if (MAP_CONF.showResultsMap) {
-        MAP_CONF.resultsToMapJSON = JSON.parse($('<textarea/>').html(MAP_CONF.resultsToMap).text());
-        loadMap(MAP_CONF);
-        window.dispatchEvent(new Event('resize'));
-        setMapTitle(MAP_CONF);
-    }
-}
-
-
 $(function(){
     showSpeciesPage();
-    setMapTitle(MAP_CONF);
-    loadTheMap();
+    loadTheMap(MAP_CONF)
 });
 
 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
@@ -483,27 +455,12 @@ $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             fq=""/>
     }
     if(target == '#overview'){
-        loadTheMap();
+        loadTheMap(MAP_CONF);
     }
 });
 
 <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
-    $("#toggleMapPresenceAbsence").click(function() {
-          if (MAP_CONF.presenceOrAbsence == "presence") {
-                MAP_CONF.resultsToMap = "${searchResultsAbsence}";
-                $("#toggleMapPresenceAbsence").html("Showing: absence records");
-                MAP_CONF.presenceOrAbsence = "absence";
-                removeMap(MAP_CONF);
-                loadTheMap();
-
-          } else if (MAP_CONF.presenceOrAbsence == "absence") {
-                MAP_CONF.resultsToMap = "${searchResultsPresence}";
-                $("#toggleMapPresenceAbsence").html("Showing: presence records");
-                MAP_CONF.presenceOrAbsence = "presence";
-                removeMap(MAP_CONF);
-                loadTheMap();
-        }
-    });
+    setPresenceAbsenceToggle(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
 </g:if>
 
 </asset:script>

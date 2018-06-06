@@ -19,10 +19,65 @@ var colours = [/* colorUtil */ "8B0000", "FF0000", "CD5C5C", "E9967A", "8B4513",
 ];
 
 
+function loadTheMap (MAP_CONF) {
+    if (MAP_CONF.showResultsMap) {
+        MAP_CONF.resultsToMapJSON = JSON.parse($('<textarea/>').html(MAP_CONF.resultsToMap).text());
+
+        var firstMapShow = true;
+        //leaflet maps don't like being loaded in a div that isn't being shown, this fixes the position of the map
+        $(function () {
+            if (MAP_CONF.mapType == 'search') {
+                $("#tabs").tabs({
+                    beforeActivate: function (event, ui) {
+                        if (firstMapShow) {
+                            firstMapShow = false;
+                            window.dispatchEvent(new Event('resize'));
+                            fitMapToBounds(MAP_CONF);
+                        }
+                    }
+                });
+            }
+            removeMap(MAP_CONF);
+            loadMap(MAP_CONF);
+            setMapTitle(MAP_CONF);
+            window.dispatchEvent(new Event('resize'));
+        });
+    }
+}
+
+function setPresenceAbsenceToggle(MAP_CONF, searchResultsPresence, searchResultsAbsence) {
+
+    var toggle = document.getElementById('toggleMapPresenceAbsence');
+    var toggleContainer = document.getElementById('toggleMapPresenceAbsence-toggle-container');
+    var toggleNumber;
+
+    $("#toggleMapPresenceAbsence").click(function() {
+        toggleNumber = !toggleNumber;
+        if (toggleNumber) {
+            toggleContainer.style.clipPath = 'inset(0 0 0 50%)';
+            toggleContainer.style.backgroundColor = '#D74046';
+            MAP_CONF.resultsToMap = searchResultsAbsence;
+            MAP_CONF.presenceOrAbsence = "absence";
+            removeMap(MAP_CONF);
+            loadTheMap(MAP_CONF);
+
+        } else {
+            toggleContainer.style.clipPath = 'inset(0 50% 0 0)';
+            toggleContainer.style.backgroundColor = 'dodgerblue';
+            MAP_CONF.resultsToMap = searchResultsPresence;
+            MAP_CONF.presenceOrAbsence = "presence";
+            removeMap(MAP_CONF);
+            loadTheMap(MAP_CONF);
+        }
+    });
+}
+
 function removeMap(MAP_CONF) {
-    MAP_CONF.map.remove();
-    MAP_CONF.map.off();
-    delete MAP_CONF.map;
+    if(MAP_CONF.map) {
+        MAP_CONF.map.remove();
+        MAP_CONF.map.off();
+        delete MAP_CONF.map;
+    }
 }
 
 //not currently used:
@@ -77,19 +132,15 @@ function addLegendItem(name, red, green, blue, rgbhex, hiderangemax){
 }
 
 function setMapTitle (MAP_CONF) {
+    $('#occurrenceRecordCountAll').html("(" + MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + " in total)");
+    $(".occurrenceRecordCount").html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString()); //species show charts tab
     if (MAP_CONF.presenceOrAbsence == 'presence') {
         $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrencePresenceRecords.toLocaleString() + " presence");
-        if (MAP_CONF.pageResultsOccurrenceAbsenceRecords > 0) {
-            $('#occurrenceRecordCountAll').html("(" + MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + " in total)");
-        }
     } else if (MAP_CONF.presenceOrAbsence == 'absence') {
         $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceAbsenceRecords.toLocaleString() + " absence");
-        if (MAP_CONF.pageResultsOccurrenceRecords > 0) {
-            $('#occurrenceRecordCountAll').html("(" + MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + " in total)");
-        }
     } else { //all records
         $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + "");
-        $('#occurrenceRecordCountAll').html("");
+        $('#occurrenceRecordCountAll').html(""); //reduce clutter
     }
     if (MAP_CONF.mapType == 'search') {
         $('#speciesCount').html(Object.keys(speciesLayers._layers).length);
@@ -105,7 +156,7 @@ function fitMapToBounds(MAP_CONF) {
     for (i = 0; i < MAP_CONF.resultsToMapJSON.results.length; i++) {
         if (Number(MAP_CONF.resultsToMapJSON.results[i].occurrenceCount) > 0) {
 
-            var jsonUrl = MAP_CONF.biocacheServiceUrl + "/mapping/bounds.json?q=lsid:" + MAP_CONF.resultsToMapJSON.results[i].guid + "&qc=" + mapContextUnencoded + MAP_CONF.additionalMapFilter;
+            var jsonUrl = MAP_CONF.biocacheServiceUrl + "/mapping/bounds.json?q=lsid:" + MAP_CONF.resultsToMapJSON.results[i].guid + "&qc=" + mapContextUnencoded + (MAP_CONF.additionalMapFilter? '&' + MAP_CONF.additionalMapFilter : '');
             if (MAP_CONF.presenceOrAbsence == 'presence') {
                 jsonUrl += "&fq=occurrence_status:present"
             } else if (MAP_CONF.presenceOrAbsence == 'absence') {
@@ -164,7 +215,7 @@ function loadMap(MAP_CONF) {
             if (Number(MAP_CONF.resultsToMapJSON.results[i].occurrenceCount) > 0) {
                 prms["ENV"] = MAP_CONF.mapEnvOptions + ";color:" + colours[i];
                 var url = MAP_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-                    MAP_CONF.resultsToMapJSON.results[i].guid + "&qc=" + mapContextUnencoded + MAP_CONF.additionalMapFilter
+                    MAP_CONF.resultsToMapJSON.results[i].guid + "&qc=" + mapContextUnencoded + (MAP_CONF.additionalMapFilter? '&' + MAP_CONF.additionalMapFilter : '')
                 if (MAP_CONF.presenceOrAbsence == 'presence') {
                     url += "&fq=occurrence_status:present"
                 } else if (MAP_CONF.presenceOrAbsence == 'absence') {
@@ -187,7 +238,7 @@ function loadMap(MAP_CONF) {
                 prmsLayer[i]["ENV"] = MAP_CONF.mapEnvOptions + ";color:" + coloursArr[i];
                 htmlEntityDecoder.innerHTML = fqsArr[i];
                 var url = MAP_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-                    SHOW_CONF.guid + "&qc=" + mapContextUnencoded + SHOW_CONF.additionalMapFilter +
+                    MAP_CONF.guid + "&qc=" + mapContextUnencoded + (MAP_CONF.additionalMapFilter? '&' + MAP_CONF.additionalMapFilter : '') +
                     "&fq=" + htmlEntityDecoder.value;
                 if (MAP_CONF.presenceOrAbsence == 'presence') {
                     url += "&fq=occurrence_status:present"
@@ -201,7 +252,7 @@ function loadMap(MAP_CONF) {
         } else {
             prms["ENV"] = MAP_CONF.mapEnvOptions;
             var url = MAP_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-                SHOW_CONF.guid + "&qc=" + mapContextUnencoded + MAP_CONF.additionalMapFilter;
+                MAP_CONF.guid + "&qc=" + mapContextUnencoded + (MAP_CONF.additionalMapFilter? '&' + MAP_CONF.additionalMapFilter : '');
             if (MAP_CONF.presenceOrAbsence == 'presence') {
                 url += "&fq=occurrence_status:present"
             } else if (MAP_CONF.presenceOrAbsence == 'absence') {
@@ -362,14 +413,14 @@ function loadMap(MAP_CONF) {
 
                         $.each(data, function (index, legendDef) {
                             var legItemName = legendDef.name ? legendDef.name : 'Not specified';
-                            addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, '', SHOW_CONF.mapEnvLegendHideMax);
+                            addLegendItem(legItemName, legendDef.red, legendDef.green, legendDef.blue, '', MAP_CONF.mapEnvLegendHideMax);
                         });
                     }
                 });
             } else if (MAP_CONF.mapLayersLabels != '') {
                 //use predefined legend entries and colours
-                var mapLabelsArr = SHOW_CONF.mapLayersLabels.split("|");
-                var mapColoursArr = SHOW_CONF.mapLayersColours.split("|");
+                var mapLabelsArr = MAP_CONF.mapLayersLabels.split("|");
+                var mapColoursArr = MAP_CONF.mapLayersColours.split("|");
                 for (var i = 0; i < mapLabelsArr.length; i++) {
                     addLegendItem(mapLabelsArr[i], 0, 0, 0, mapColoursArr[i], false); //use rgbhex and full label provided
                 }

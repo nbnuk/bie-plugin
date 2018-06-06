@@ -207,6 +207,7 @@
         </g:if>
 
                     <div class="result-options">
+                        <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: grailsApplication.config?.search?.defaultRows).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> results</span>
 
                         <g:if test="${idxTypes.contains("TAXON")}">
                             <div class="download-button pull-right">
@@ -430,11 +431,26 @@
                         <div class="taxon-map">
                             <h3><span id="occurrenceRecordCount">0</span> records
                                 <span id="occurrenceRecordCountAll"></span>
-                                (<span id="speciesCount">0</span> taxa)
+                                from <span id="speciesCount">0</span> taxa
                             </h3>
                             <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
-                                <span id="toggleMapPresenceAbsence" style="float:right; margin-top:-2.2em;border:1px solid #ddd; padding:2px; padding-left: 5px; padding-right: 5px; cursor:pointer">
-                                    Showing: presence records
+                                <span id="toggleMapPresenceAbsence">
+                                    <span class="inner-container">
+                                        <span class="toggle">
+                                            <p>Absence</p>
+                                        </span>
+                                        <span class="toggle">
+                                            <p>Presence</p>
+                                        </span>
+                                    </span>
+                                    <span class="inner-container" id='toggleMapPresenceAbsence-toggle-container'>
+                                        <span class="toggle">
+                                            <p>Absence</p>
+                                        </span>
+                                        <span class="toggle">
+                                            <p>Presence</p>
+                                        </span>
+                                    </span>
                                 </span>
                             </g:if>
                             <g:if test="${message(code: 'overview.map.button.records.map.subtitle', default: '')}">
@@ -553,7 +569,7 @@ var MAP_CONF = {
     defaultMapToken:            "${grailsApplication.config.map.default.token}",
     recordsMapColour:           "${grailsApplication.config.map.records.colour}",
     mapQueryContext:            "${grailsApplication.config.biocacheService.queryContext}",
-    additionalMapFilter:        "${raw(grailsApplication.config.search?.additionalMapFilter ?: '')}", /* note, not filter used for species-specific map */
+    additionalMapFilter:        "${raw(grailsApplication.config?.additionalMapFilter ?: '')}",
     map:                        null,
     mapOutline:                 ${grailsApplication.config.map.outline ?: 'false'},
     mapEnvOptions:              "name:circle;size:4;opacity:0.8",
@@ -587,51 +603,16 @@ function tagResults() {
     }
 }
 
-function loadTheMap () {
-    if (MAP_CONF.showResultsMap) {
-        MAP_CONF.resultsToMapJSON = JSON.parse($('<textarea/>').html(MAP_CONF.resultsToMap).text());
-        var firstMapShow = true;
-        //leaflet maps don't like being loaded in a div that isn't being shown, this fixes the position of the map
-        $( function() {
-            $( "#tabs" ).tabs({
-                beforeActivate: function (event, ui) {
-                    if (firstMapShow) {
-                        firstMapShow = false;
-                        window.dispatchEvent(new Event('resize'));
-                        fitMapToBounds(MAP_CONF);
-                    }
-                }
-            });
-            loadMap(MAP_CONF);
-            window.dispatchEvent(new Event('resize'));
-            setMapTitle(MAP_CONF);
-        } );
-    }
-}
+
 
 tagResults();
 
 injectBiocacheResultsActual(MAP_CONF.allResultsOccurrenceRecords, SEARCH_CONF.maxSpecies);
 
-loadTheMap();
+loadTheMap(MAP_CONF);
 
 <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
- $("#toggleMapPresenceAbsence").click(function() {
-    if (MAP_CONF.presenceOrAbsence == "presence") {
-        MAP_CONF.resultsToMap = "${searchResultsAbsence}";
-        $("#toggleMapPresenceAbsence").html("Showing: absence records");
-        MAP_CONF.presenceOrAbsence = "absence";
-        removeMap(MAP_CONF);
-        loadTheMap();
-
-    } else if (MAP_CONF.presenceOrAbsence == "absence") {
-        MAP_CONF.resultsToMap = "${searchResultsPresence}";
-        $("#toggleMapPresenceAbsence").html("Showing: presence records");
-        MAP_CONF.presenceOrAbsence = "presence";
-        removeMap(MAP_CONF);
-        loadTheMap();
-    }
- });
+    setPresenceAbsenceToggle(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
 </g:if>
 
 </asset:script>

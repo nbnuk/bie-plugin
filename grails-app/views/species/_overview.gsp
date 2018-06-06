@@ -91,15 +91,30 @@
                     <span id="occurrenceRecordCountAll"></span>
                 </h3>
                 <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
-                    <span id="toggleMapPresenceAbsence" style="float:right; margin-top:-2.2em;border:1px solid #ddd; padding:2px; padding-left: 5px; padding-right: 5px; cursor:pointer">
-                        Showing: presence records
+                    <span id="toggleMapPresenceAbsence">
+                            <span class="inner-container">
+                                <span class="toggle">
+                                    <p>Absence</p>
+                                </span>
+                                <span class="toggle">
+                                    <p>Presence</p>
+                                </span>
+                            </span>
+                            <span class="inner-container" id='toggleMapPresenceAbsence-toggle-container'>
+                                <span class="toggle">
+                                    <p>Absence</p>
+                                </span>
+                                <span class="toggle">
+                                    <p>Presence</p>
+                                </span>
+                            </span>
                     </span>
                 </g:if>
                 <g:if test="${message(code:'overview.map.button.records.map.subtitle', default:'')}">
                     <p>${g.message(code:'overview.map.button.records.map.subtitle')}</p>
                 </g:if>
                 <div id="leafletMap"></div>
-                <!-- RR for legend display, if needed -->
+                <!-- for legend display, if needed -->
                 <div id="template" style="display:none">
                     <div class="colourbyTemplate">
                         <a class="colour-by-legend-toggle colour-by-control tooltips" href="#" title="Map legend - click to expand"><i class="fa fa-list-ul fa-lg" style="color:#333"></i></a>

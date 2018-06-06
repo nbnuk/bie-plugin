@@ -39,6 +39,7 @@ function loadSpeciesLists(){
     var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split("|"); //TODO: what if bad embedded HTMl characters? what if key contains pipe mark?
     var addedToHeadline = [];
     $.each(listHeadlines, function (idx, listHeadline) {addedToHeadline[idx] = false;}); //only allow first species list kvp to match a given headline and be included in the headline area
+
     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
         for(var i = 0; i < data.length; i++) {
             var specieslist = data[i];
@@ -50,6 +51,8 @@ function loadSpeciesLists(){
                 $description.attr('id', '#specieslist-block-' + specieslist.dataResourceUid);
                 $description.addClass('species-list-block');
                 $description.find(".title").html(specieslist.list.listName);
+
+                addNNSSbiosecurityLinks(SHOW_CONF.speciesListLinks, specieslist.dataResourceUid);
 
                 if (specieslist.kvpValues.length > 0) {
                     var content = "<table class='table'>";
@@ -820,4 +823,16 @@ function addNNSSlink() {
         $("#NNSSform").submit();
         return false;
     });
+}
+
+function addNNSSbiosecurityLinks(links, drID) {
+    var listOnlineResources = links.split("|");
+    $.each(listOnlineResources, function (idx, listOnlineResource) {
+        var listOnlineResourceDetails = listOnlineResource.split("="); //should be in form dr=url=text
+        if (listOnlineResourceDetails[0] == drID) {
+            //add link under 'Online resources'
+            $(".panel-resources ul").append('<li id="NNSSbiosecurity_link_' + idx + '"><a href="' + listOnlineResourceDetails[1] +'">' + listOnlineResourceDetails[2] + '</a></li>');
+        }
+    });
+
 }
