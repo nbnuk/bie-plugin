@@ -72,15 +72,40 @@
             </div>
         </g:if>
         <div class="header-inner">
-            <h5 class="pull-right json">
-                <a href="${jsonLink}" target="data"
-                   title="${message(code:"show.view.json.title")}" class="btn btn-sm btn-default active"
-                   data-toggle="tooltip" data-placement="bottom"><g:message code="show.json" /></a>
-            </h5>
+            <g:if test="${grailsApplication.config?.nbn?.inns == 'true' }">
+                <h5 class="pull-right" style="clear:right">
+                    <a href="/"
+                       title="Back to search" class="btn btn-sm btn-default active">Back to search</a>
+                </h5>
+                <g:if test="${grailsApplication.config?.biocacheService?.altQueryContext}">
+                    <div style="float:right;clear:right">
+                        <form method="get"
+                              action=""
+                              id="records-include-filter-form">
+                            <div class="input-group" >
+                                <label for="includeRecordsFilter">Include records for</label>
+                                <select class="form-control input-sm" id="includeRecordsFilter" name="includeRecordsFilter" onchange="this.form.submit()">
+                                    <option value="biocacheService-queryContext" ${recordsFilterToggle == '' || recordsFilterToggle == 'biocacheService-queryContext'? 'selected="selected"' : '' }>Wales</option>
+                                    <option value="biocacheService-altQueryContext" ${recordsFilterToggle == 'biocacheService-altQueryContext'? 'selected="selected"' : '' }>Wales + 20km buffer</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                </g:if>
+            </g:if>
+            <g:else>
+                <h5 class="pull-right json">
+                    <a href="${jsonLink}" target="data"
+                        title="${message(code:"show.view.json.title")}" class="btn btn-sm btn-default active"
+                        data-toggle="tooltip" data-placement="bottom"><g:message code="show.json" /></a>
+                </h5>
+            </g:else>
+
             <h1>${raw(sciNameFormatted)}</h1>
             <g:set var="commonNameDisplay" value="${(tc?.commonNames) ? tc?.commonNames?.opt(0)?.nameString : ''}"/>
-            <g:if test="${commonNameDisplay}">
-                <h2>${raw(commonNameDisplay)}</h2>
+            <g:set var="commonNameSingleDisplay" value="${(tc?.commonNameSingle) ?: commonNameDisplay}"/>
+            <g:if test="${commonNameSingleDisplay}">
+                <h2>${raw(commonNameSingleDisplay)}</h2>
             </g:if>
             <g:if test="${tc?.taxonConcept?.acceptedConceptName}">
                 <h2><g:link uri="/species/${tc.taxonConcept.acceptedConceptID}">${tc.taxonConcept.acceptedConceptName}</g:link></h2>
@@ -393,9 +418,9 @@
         speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}",
         speciesAdditionalHeadlinesSpeciesList: "${grailsApplication.config.species?.additionalHeadlinesSpeciesList?:''}",
         speciesTagIfInList: "${grailsApplication.config.search?.tagIfInList?:''}",
+        speciesTagIfInListHTML: "${grailsApplication.config.search?.tagIfInListHTML?:''}",
         speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
-        speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
-        speciesListLinks: "${grailsApplication.config.species?.listLinks?:''}",
+        speciesListLinks: "${grailsApplication.config.species?.listLinks?.json?:''}",
 
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"
@@ -419,7 +444,7 @@ var MAP_CONF = {
         defaultMapId:               "${grailsApplication.config.map.default.id}",
         defaultMapToken:            "${grailsApplication.config.map.default.token}",
         recordsMapColour:           "${grailsApplication.config.map.records.colour}",
-        mapQueryContext:            "${grailsApplication.config.biocacheService.queryContext}",
+        mapQueryContext:            "${recordsFilterToggle == 'biocacheService-altQueryContext'? (grailsApplication.config?.biocacheService?.altQueryContext ?: '') : (grailsApplication.config?.biocacheService?.queryContext ?: '')}",
         additionalMapFilter:        "${raw(grailsApplication.config.additionalMapFilter)}",
         map:                        null,
         mapOutline:                 ${grailsApplication.config.map.outline ?: 'false'},
@@ -440,6 +465,9 @@ var MAP_CONF = {
 
 $(function(){
     showSpeciesPage();
+    <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+        initialPresenceAbsenceMap(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
+    </g:if>
     loadTheMap(MAP_CONF)
 });
 
@@ -451,7 +479,7 @@ $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             biocacheServiceUrl="${grailsApplication.config.biocacheService.baseURL}"
             biocacheWebappUrl="${grailsApplication.config.biocache.baseURL}"
             q="lsid:${guid}"
-            qc="${grailsApplication.config.biocacheService.queryContext ?: ''}"
+            qc="${recordsFilterToggle? (recordsFilter ?: '') : (grailsApplication.config.biocacheService.queryContext ?: '')}"
             fq=""/>
     }
     if(target == '#overview'){

@@ -31,7 +31,9 @@ class BieService {
     }
 
     //additional filter on occurrence records to get different occurrenceCount values for e.g. occurrence_status:absent records
-    def searchBieOccFilter(SearchRequestParamsDTO requestObj, String occFilter) {
+    //also allows override of biocache.queryContext if occFilter includes the needed filter already
+    //def searchBieOccFilter(SearchRequestParamsDTO requestObj, String occFilter, Boolean overrideBiocacheContext) {
+    def searchBieOccFilter(SearchRequestParamsDTO requestObj, occFilter, overrideBiocacheContext) {
 
         def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
                 "&facets=" + grailsApplication.config.facets
@@ -43,9 +45,13 @@ class BieService {
         }
 
         //add a query context for biocache - this will influence record counts
-        if(grailsApplication.config.biocacheService.queryContext){
-            //watch out for mutually exclusive conditions between queryContext and occFilter, e.g. if queryContext=occurrence_status:present and occFilter=occurrence_stats:absent then will get zero records returned
-            queryUrl = queryUrl + "&bqc=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ","%20") + "%20AND%20" + occFilter.replaceAll(" ", "%20") + ")"
+        if (!overrideBiocacheContext) {
+            if (grailsApplication.config.biocacheService.queryContext) {
+                //watch out for mutually exclusive conditions between queryContext and occFilter, e.g. if queryContext=occurrence_status:present and occFilter=occurrence_stats:absent then will get zero records returned
+                queryUrl = queryUrl + "&bqc=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20") + "%20AND%20" + occFilter.replaceAll(" ", "%20") + ")"
+            } else {
+                queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20") + ")"
+            }
         } else {
             queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20") + ")"
         }
@@ -125,13 +131,21 @@ class BieService {
         }
     }
 
-    def getOccurrenceCountsForGuid(guid, presenceOrAbsence) {
+    def getOccurrenceCountsForGuid(guid, presenceOrAbsence, occFilter, overrideBiocacheContext) {
 
         def url = grailsApplication.config.biocacheService.baseURL + '/occurrences/taxaCount?guids=' + guid.replaceAll(/\s+/, '+')
 
-        if (grailsApplication.config.biocacheService.queryContext) {
-            url = url + "&fq=" + grailsApplication.config.biocacheService.queryContext.replaceAll(" ","%20")
+        //add a query context for biocache - this will influence record counts
+        if (!overrideBiocacheContext) {
+            if (grailsApplication.config.biocacheService.queryContext) {
+                url = url + "&fq=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20") + "%20AND%20" + occFilter.replaceAll(" ", "%20") + ")"
+            } else {
+                url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
+            }
+        } else {
+            url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
         }
+
         if (grailsApplication.config?.additionalMapFilter) {
             url = url + "&" + grailsApplication.config.additionalMapFilter.replaceAll(" ","%20")
         }

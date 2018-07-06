@@ -2,13 +2,13 @@
 
     <div class="pull-right btn-group btn-group-vertical">
         <a class="btn btn-default"
-           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}">
+           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}${recordsFilterToggle? "&fq="+recordsFilter : ""}">
             <i class="glyphicon glyphicon-th-list"></i>
             View list of all
             occurrence records for this taxon (<span class="occurrenceRecordCount">0</span> records)
         </a>
         <a class="btn btn-default"
-           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}#tab_mapView">
+           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}${recordsFilterToggle? "&fq="+recordsFilter : ""}#tab_mapView">
             <i class="glyphicon glyphicon-map-marker"></i>
             View map of all
             occurrence records for this taxon (<span class="occurrenceRecordCount">0</span> records)

@@ -30,17 +30,22 @@ function showSpeciesPage() {
     // loadBhl(); // now an external link to BHL
     //loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName,'trove-integration','trove-result-list','previousTrove','nextTrove');
 
-    if (SHOW_CONF.speciesShowNNSSlink == "true") addNNSSlink();
+    if (SHOW_CONF.speciesShowNNSSlink == "true") {
+        addNNSSlink();
+    }
 }
 
 //loads list membership and KVP details under 'Datasets' section, and also adds any headline items to subtitle
 function loadSpeciesLists(){
     //console.log('### loadSpeciesLists #### ' + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid);
-    var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split("|"); //TODO: what if bad embedded HTMl characters? what if key contains pipe mark?
+    var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split(","); //TODO: what if bad embedded HTML characters? what if key contains comma?
     var addedToHeadline = [];
     $.each(listHeadlines, function (idx, listHeadline) {addedToHeadline[idx] = false;}); //only allow first species list kvp to match a given headline and be included in the headline area
 
+    console.log(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?');
+
     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
+        if (!data) return;
         for(var i = 0; i < data.length; i++) {
             var specieslist = data[i];
             var maxListFields = 10;
@@ -52,7 +57,7 @@ function loadSpeciesLists(){
                 $description.addClass('species-list-block');
                 $description.find(".title").html(specieslist.list.listName);
 
-                addNNSSbiosecurityLinks(SHOW_CONF.speciesListLinks, specieslist.dataResourceUid);
+                addNNSSbiosecurityLinks($('<textarea />').html(SHOW_CONF.speciesListLinks).text(), specieslist.dataResourceUid);
 
                 if (specieslist.kvpValues.length > 0) {
                     var content = "<table class='table'>";
@@ -94,6 +99,13 @@ function loadSpeciesLists(){
                             addedToHeadline[idx] = true;
                         }
                     });
+                }
+
+                //add header link to nonnativespecies.org entry if tagged species (INNS specific)
+                if (SHOW_CONF.speciesShowNNSSlink == "true") {
+                    if (SHOW_CONF.speciesTagIfInList == specieslist.dataResourceUid) {
+                        addNNSSlink(true, specieslist.list.listName);
+                    }
                 }
 
                 $description.find(".source").css({'display':'none'});
@@ -812,26 +824,38 @@ function collapseImageGallery(btn) {
     }
 }
 
-function addNNSSlink() {
+function addNNSSlink(inHeader, listName) {
     //opens in new tab. Haven't found a clean way of respecting user instructions on same or new tab opening for a form post
-    var NNSSform = "<form method='post' action='http://www.nonnativespecies.org/factsheet/index.cfm' id='NNSSform' target='_blank'>" +
+    if (typeof inHeader === 'undefined') { inHeader = false; }
+    if (typeof listName === 'undefined') { listName = ''; }
+    var NNSSform = "<form style='display:inline' method='post' action='http://www.nonnativespecies.org/factsheet/index.cfm' id='NNSSform" + (inHeader? "_header" : "") + "' target='_blank'>" +
         "<input type='hidden' value='" + (SHOW_CONF.scientificName).replace(/'/g, '') + "' name='query'>" +
-        "</form>" +
-        "<a id='NNSSform_submit' href='#'>NNSS</a>";
-    $(".panel-resources ul").append('<li id="NNSSform_link">' + NNSSform + '&nbsp;<img src="/assets/newtab.gif"/></li>');
-    $("#NNSSform_submit").click(function() {
-        $("#NNSSform").submit();
-        return false;
-    });
+        "</form>";
+    if (inHeader) {
+        NNSSform += "<a id='NNSSform_submit_header' href='#'>" + $('<textarea/>').html(listName).text() + $('<textarea/>').html(SHOW_CONF.speciesTagIfInListHTML).text() + "</a>";
+        var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + SHOW_CONF.speciesTagIfInList + "'>" + NNSSform;
+        sppListHeaderHTML += "</h5>";
+        $(sppListHeaderHTML).appendTo(".header-inner");
+        $("#NNSSform_submit_header").click(function() {
+            $("#NNSSform_header").submit();
+            return false;
+        });
+    } else {
+        NNSSform += "<a id='NNSSform_submit' href='#'>NNSS</a>";
+        $(".panel-resources ul").append('<li id="NNSSform_link">' + NNSSform + '&nbsp;<img src="/assets/newtab.gif"/></li>');
+        $("#NNSSform_submit").click(function() {
+            $("#NNSSform").submit();
+            return false;
+        });
+    }
 }
 
 function addNNSSbiosecurityLinks(links, drID) {
-    var listOnlineResources = links.split("|");
+    var listOnlineResources = JSON.parse(links);
     $.each(listOnlineResources, function (idx, listOnlineResource) {
-        var listOnlineResourceDetails = listOnlineResource.split("="); //should be in form dr=url=text
-        if (listOnlineResourceDetails[0] == drID) {
+        if (listOnlineResource.specieslist == drID) {
             //add link under 'Online resources'
-            $(".panel-resources ul").append('<li id="NNSSbiosecurity_link_' + idx + '"><a href="' + listOnlineResourceDetails[1] +'">' + listOnlineResourceDetails[2] + '</a></li>');
+            $(".panel-resources ul").append('<li id="NNSSbiosecurity_link_' + idx + '"><a href="' + listOnlineResource.url +'">' + listOnlineResource.label + '</a></li>');
         }
     });
 

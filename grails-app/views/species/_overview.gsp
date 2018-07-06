@@ -89,27 +89,18 @@
             <div class="taxon-map">
                 <h3><span id="occurrenceRecordCount">0</span> records
                     <span id="occurrenceRecordCountAll"></span>
+                    <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+                        <span class="map-pa-container">
+                            <div id="map-pa-switch" class="map-pa-switch">
+                                <input type="radio" class="map-pa-switch-input" name="toggle" value="presence" id="map-pa-presence" checked>
+                                <label for="map-pa-presence" class="map-pa-switch-label map-pa-switch-label-off">Presence</label>
+                                <input type="radio" class="map-pa-switch-input" name="toggle" value="absence" id="map-pa-absence">
+                                <label for="map-pa-absence" class="map-pa-switch-label map-pa-switch-label-on">Absence</label>
+                                <span class="map-pa-switch-selection"></span>
+                            </div>
+                        </span>
+                    </g:if>
                 </h3>
-                <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
-                    <span id="toggleMapPresenceAbsence">
-                            <span class="inner-container">
-                                <span class="toggle">
-                                    <p>Absence</p>
-                                </span>
-                                <span class="toggle">
-                                    <p>Presence</p>
-                                </span>
-                            </span>
-                            <span class="inner-container" id='toggleMapPresenceAbsence-toggle-container'>
-                                <span class="toggle">
-                                    <p>Absence</p>
-                                </span>
-                                <span class="toggle">
-                                    <p>Presence</p>
-                                </span>
-                            </span>
-                    </span>
-                </g:if>
                 <g:if test="${message(code:'overview.map.button.records.map.subtitle', default:'')}">
                     <p>${g.message(code:'overview.map.button.records.map.subtitle')}</p>
                 </g:if>
@@ -138,20 +129,21 @@
 
                 <div class="map-buttons">
                     <a class="btn btn-primary btn-lg"
-                       href="${mapUrl}"
+                       href="${mapUrl}${recordsFilterToggle? "&fq="+recordsFilter : ""}"
                        title="${g.message(code:'overview.map.button.records.map.title', default:'View interactive map')}"
                        role="button"><g:message code="overview.map.button.records.map" default="View Interactive Map"/></a>
                     <g:if test="${grailsApplication.config.map.simpleMapButton.toBoolean()}">
                         <a class="btn btn-primary btn-lg"
-                           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}#tab_mapView"
+                           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}${recordsFilterToggle? "&fq="+recordsFilter : ""}#tab_mapView"
                            title="${g.message(code:'overview.map.button.records.simplemap.title', default:'View map')}"
                            role="button"><g:message code="overview.map.button.records.simplemap" default="View map"/></a>
                     </g:if>
                     <a class="btn btn-primary btn-lg"
-                       href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}#tab_recordsView"
+                       href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}${recordsFilterToggle? "&fq="+recordsFilter : ""}#tab_recordsView"
                        title="${g.message(code:'overview.map.button.records.list.title', default:'View records')}"
                        role="button"><g:message code="overview.map.button.records.list" default="View records"/></a>
                 </div>
+
             </div>
 
             <div class="panel panel-default panel-actions">

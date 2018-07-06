@@ -38,6 +38,7 @@ class SpeciesController {
     def pageResultsOccs = 0
     def pageResultsOccsPresence = 0
     def pageResultsOccsAbsence = 0
+    def recordsFilter = ''
 
     def geoSearch = {
 
@@ -68,6 +69,17 @@ class SpeciesController {
         }
     }
 
+    def getRecordsFilter() {
+        //for record filter toggle
+        def recordsFilter = grailsApplication.config?.biocacheService?.queryContext?:""
+        if (params.includeRecordsFilter) {
+            if (params.includeRecordsFilter == 'biocacheService-altQueryContext') {
+                recordsFilter = grailsApplication.config?.biocacheService?.altQueryContext ?: ""
+            }
+        }
+        return recordsFilter
+    }
+
     /**
      * Search page - display search results fro the BIE (includes results for non-species pages too)
      */
@@ -84,15 +96,23 @@ class SpeciesController {
         if (params.dir && !params.sortField) {
             sortField = "score" // default sort (field) of "score" when order is defined on its own
         }
+        recordsFilter = getRecordsFilter()
 
         def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
         log.info "SearchRequestParamsDTO = " + requestObj
-        def searchResults = bieService.searchBie(requestObj)
+        log.info "recordsFilter = " + recordsFilter
+        //def searchResults = bieService.searchBie(requestObj, recordsFilter)
+        def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)
         def searchResultsPresence
         def searchResultsAbsence
         if ((grailsApplication.config?.search?.mapPresenceAndAbsence?:"") == "true") {
-            searchResultsPresence = bieService.searchBieOccFilter(requestObj, "-occurrence_status:absent")
-            searchResultsAbsence = bieService.searchBieOccFilter(requestObj, "occurrence_status:absent")
+            if (grailsApplication.config?.biocacheService?.altQueryContext) {
+                searchResultsPresence = bieService.searchBieOccFilter(requestObj, recordsFilter + "%20AND%20" + "-occurrence_status:absent", true)
+                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, recordsFilter + "%20AND%20" + "occurrence_status:absent", true)
+            } else {
+                searchResultsPresence = bieService.searchBieOccFilter(requestObj, "-occurrence_status:absent", false)
+                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, "occurrence_status:absent", false)
+            }
         }
 
         def lsids = ""
@@ -135,7 +155,9 @@ class SpeciesController {
                     allResultsOccurrenceRecords: allResultsOccs,
                     pageResultsOccurrenceRecords: pageResultsOccs,
                     pageResultsOccurrencePresenceRecords: pageResultsOccsPresence,
-                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence
+                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence,
+                    recordsFilterToggle: params.includeRecordsFilter ?: "",
+                    recordsFilter: recordsFilter
             ])
         }
     }
@@ -157,6 +179,8 @@ class SpeciesController {
         def taxonDetails = bieService.getTaxonConcept(guid)
         log.debug "show - guid = ${guid} "
 
+        recordsFilter = getRecordsFilter()
+
         if (!taxonDetails) {
             log.error "Error requesting taxon concept object: " + guid
             response.status = 404
@@ -177,11 +201,11 @@ class SpeciesController {
         } else {
 
             if ((grailsApplication.config?.search?.mapPresenceAndAbsence?:"") == "true") {
-                pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence")
-                pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence")
+                pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence", recordsFilter, true)
+                pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence", recordsFilter, true)
                 allResultsOccs = pageResultsOccs = pageResultsOccsPresence + pageResultsOccsAbsence
             } else {
-                allResultsOccs = pageResultsOccs = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all")
+                allResultsOccs = pageResultsOccs = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all", recordsFilter, true)
             }
             def jsonSlurper = new JsonSlurper()
             //fake up a search results JSON object to look like that returned for species search list jsonSlurper.parseText(
@@ -209,7 +233,9 @@ class SpeciesController {
                     allResultsOccurrenceRecords: allResultsOccs,
                     pageResultsOccurrenceRecords: pageResultsOccs,
                     pageResultsOccurrencePresenceRecords: pageResultsOccsPresence,
-                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence
+                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence,
+                    recordsFilterToggle: params.includeRecordsFilter ?: "",
+                    recordsFilter: recordsFilter
             ])
         }
     }
@@ -313,7 +339,7 @@ class SpeciesController {
         def title = "INNS species" //TODO
         //getAllResults()
 
-        def url = biocacheService.performBatchSearch(allResultsGuids, title)
+        def url = biocacheService.performBatchSearch(allResultsGuids, title, recordsFilter)
 
         if(url){
             redirect(url:url)

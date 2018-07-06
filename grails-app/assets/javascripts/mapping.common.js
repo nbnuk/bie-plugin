@@ -18,12 +18,29 @@ var colours = [/* colorUtil */ "8B0000", "FF0000", "CD5C5C", "E9967A", "8B4513",
     "FFFF66", "9900FF", "00FF99", "333399", "99FFCC", "666600", "33CCFF", "006666", "0000CC", "6600CC", "CCCC99", "FF9999", "99CC66"
 ];
 
+//adapted from sliderProUtils function of same name
+function checkIE() {
+    if ( typeof checkIE.isIE !== 'undefined' ) {
+        return checkIE.isIE;
+    }
+
+    var userAgent = window.navigator.userAgent,
+        msie = userAgent.indexOf( 'MSIE' );
+    if ( userAgent.indexOf( 'MSIE' ) !== -1 || userAgent.match( /Trident.*rv\:11\./ ) ) {
+        checkIE.isIE = true;
+    } else {
+        checkIE.isIE = false;
+    }
+
+    return checkIE.isIE;
+}
 
 function loadTheMap (MAP_CONF) {
     if (MAP_CONF.showResultsMap) {
         MAP_CONF.resultsToMapJSON = JSON.parse($('<textarea/>').html(MAP_CONF.resultsToMap).text());
 
         var firstMapShow = true;
+        var isIE = checkIE();
         //leaflet maps don't like being loaded in a div that isn't being shown, this fixes the position of the map
         $(function () {
             if (MAP_CONF.mapType == 'search') {
@@ -31,7 +48,14 @@ function loadTheMap (MAP_CONF) {
                     beforeActivate: function (event, ui) {
                         if (firstMapShow) {
                             firstMapShow = false;
-                            window.dispatchEvent(new Event('resize'));
+                            if (!isIE) {
+                                window.dispatchEvent(new Event('resize'));
+                            } else {
+                                var event = document.createEvent("Event");
+                                event.initEvent("resize", false, true);
+                                // args: string type, boolean bubbles, boolean cancelable
+                                window.dispatchEvent(event);
+                            }
                             fitMapToBounds(MAP_CONF);
                         }
                     }
@@ -40,30 +64,37 @@ function loadTheMap (MAP_CONF) {
             removeMap(MAP_CONF);
             loadMap(MAP_CONF);
             setMapTitle(MAP_CONF);
-            window.dispatchEvent(new Event('resize'));
+            if (!isIE) {
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                var event = document.createEvent("Event");
+                event.initEvent("resize", false, true);
+                // args: string type, boolean bubbles, boolean cancelable
+                window.dispatchEvent(event);
+            }
         });
     }
 }
 
+function initialPresenceAbsenceMap(MAP_CONF, searchResultsPresence, searchResultsAbsence) {
+    if ($('input[name=toggle]:checked', '#map-pa-switch').val() == 'absence') {
+        MAP_CONF.resultsToMap = searchResultsAbsence;
+        MAP_CONF.presenceOrAbsence = "absence";
+    } //else default is presence map
+}
+
 function setPresenceAbsenceToggle(MAP_CONF, searchResultsPresence, searchResultsAbsence) {
-
-    var toggle = document.getElementById('toggleMapPresenceAbsence');
-    var toggleContainer = document.getElementById('toggleMapPresenceAbsence-toggle-container');
-    var toggleNumber;
-
-    $("#toggleMapPresenceAbsence").click(function() {
-        toggleNumber = !toggleNumber;
-        if (toggleNumber) {
-            toggleContainer.style.clipPath = 'inset(0 0 0 50%)';
-            toggleContainer.style.backgroundColor = '#D74046';
+    $('input[name=toggle]', '#map-pa-switch').change(function() {
+        var toggle = this.value;
+        if (toggle == 'absence') {
+            /* toggleContainer.style.backgroundColor = '#D74046'; */
             MAP_CONF.resultsToMap = searchResultsAbsence;
             MAP_CONF.presenceOrAbsence = "absence";
             removeMap(MAP_CONF);
             loadTheMap(MAP_CONF);
 
-        } else {
-            toggleContainer.style.clipPath = 'inset(0 50% 0 0)';
-            toggleContainer.style.backgroundColor = 'dodgerblue';
+        } else if (toggle == 'presence') {
+            /* toggleContainer.style.backgroundColor = 'dodgerblue'; */
             MAP_CONF.resultsToMap = searchResultsPresence;
             MAP_CONF.presenceOrAbsence = "presence";
             removeMap(MAP_CONF);

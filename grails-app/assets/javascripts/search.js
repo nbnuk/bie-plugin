@@ -42,9 +42,12 @@ $(document).ready(function() {
     });
 
     // AJAX search results
-    //injectBhlResults();
-    //injectBiocacheResults();
-    //injectBiocacheResultsActual();
+    if (SEARCH_CONF.isNBNinns == 'true') {
+        injectBiocacheResultsActual(MAP_CONF.allResultsOccurrenceRecords, SEARCH_CONF.maxSpecies);
+    } else {
+        injectBhlResults();
+        injectBiocacheResults();
+    }
 
     // in mobile view toggle display of facets
     $("#toggleFacetDisplay").click(function() {
@@ -56,6 +59,28 @@ $(document).ready(function() {
         }
     });
 });
+
+/**
+ * Tag results on page with configured list membership with HTML decoration
+ *
+ * @param lsidsOnPage
+ */
+function tagResults(lsidsOnPage) {
+    if (SHOW_CONF.resultSppListTag) {
+        $.getJSON(SHOW_CONF.speciesListUrl + '/ws/speciesListItems/' + SHOW_CONF.resultSppListTag + '?callback=?', function( data ) {
+            for(var i = 0; i < data.length; i++) {
+                var spp = data[i];
+                var lsid = spp.lsid;
+                if ($.inArray(lsid, lsidsOnPage) > -1) {
+                    var linkTag = "species/" + lsid;
+                    var addTagsTo = $('h3 a[href$="' + linkTag + '"]');
+                    var tagHTML = $("<div/>").html(SHOW_CONF.resultSppListTagHTML).text();
+                    $(tagHTML).insertAfter(addTagsTo);
+                }
+            }
+        });
+    }
+}
 
 /**
  * Build URL params to remove selected fq
@@ -209,4 +234,7 @@ function insertSearchLinks(html) {
     });
     $('#related-searches').removeClass('hide');
 }
+
+
 //= require leaflet.js
+

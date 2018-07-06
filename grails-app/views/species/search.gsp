@@ -15,7 +15,6 @@
 <%@ page import="au.org.ala.bie.BieTagLib" contentType="text/html;charset=UTF-8" %>
 <g:set var="alaUrl" value="${grailsApplication.config.ala.baseURL}"/>
 <g:set var="biocacheUrl" value="${grailsApplication.config.biocache.baseURL}"/>
-
 <!doctype html>
 <html>
 <head>
@@ -36,9 +35,10 @@
             biocacheUrl: "${grailsApplication.config.biocache.baseURL}",
             biocacheServicesUrl: "${grailsApplication.config.biocacheService.baseURL}",
             bhlUrl: "${grailsApplication.config.bhl.baseURL}",
-            biocacheQueryContext: "${grailsApplication.config.biocacheService.queryContext}",
+            biocacheQueryContext: "${grailsApplication.config?.biocacheService.queryContext ?: ''}",
             geocodeLookupQuerySuffix: "${grailsApplication.config.geocode.querySuffix}",
-            maxSpecies: ${grailsApplication.config?.search?.speciesLimit ?: 100}
+            maxSpecies: ${grailsApplication.config?.search?.speciesLimit ?: 100},
+            isNBNinns: "${grailsApplication.config?.nbn?.inns ?: ''}"
         }
     </asset:script>
     <g:if test="${grailsApplication.config.search?.mapResults == 'true'}">
@@ -54,17 +54,58 @@
     <header class="pg-header">
         <div class="row">
             <div class="col-sm-9">
-                <h1>
-                    INNS search<g:if test="${searchResults.queryTitle != 'all records' && searchResults.queryTitle != '*:*'}"> for <strong>${searchResults.queryTitle}</strong></g:if>
-                </h1>
-                Non-native species determined by the GBNNSIP list of the UK species inventory
+                <g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">
+                    <h1>
+                        Wales INNS portal<g:if test="${searchResults.queryTitle != 'all records' && searchResults.queryTitle != '*:*'}"> for <strong>${searchResults.queryTitle}</strong></g:if>
+                    </h1>
+                    This page provides information on the 198 invasive non-native species currently of most interest to Wales<br/>
+                    <small>
+                        By accessing records via the web service users accept that any <a title="data license" href="https://docs.nbnatlas.org/data-licenses/">CC-BY-NC</a> licenced records must not be used for commercial purposes without the permission of the data provider and all data providers must be acknowledged as required.
+                    </small>
+                </g:if>
+                <g:else>
+                    <h1>
+                        Search for <strong>${searchResults.queryTitle == "*:*" ? 'everything' : searchResults.queryTitle}</strong>
+                        returned <g:formatNumber number="${searchResults.totalRecords}" type="number"/>
+                        results.
+                    </h1>
+                </g:else>
             </div>
 
             <div class="col-sm-3">
                 <div id="related-searches" class="related-searches hide">
-                    <h4>Related Searches</h4>
+                    <g:if test="${grailsApplication.config?.nbn?.inns == 'true' }">
+                        <h4>Useful links</h4>
+                    </g:if>
+                    <g:else>
+                        <h4>Related Searches</h4>
+                    </g:else>
                     <ul class="list-unstyled"></ul>
                 </div>
+                <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.biocacheService?.altQueryContext }">
+                    <div>
+                        <form method="get"
+                              action="${grailsApplication.config.bie.baseURL}${grailsApplication.config.bie.searchPath}"
+                              role="search" id="records-include-filter-form">
+                            <div class="input-group" >
+                                <label for="includeRecordsFilter">Include records for</label>
+                                <select class="form-control input-sm" id="includeRecordsFilter" name="includeRecordsFilter" onchange="this.form.submit()">
+                                    <option value="biocacheService-queryContext" ${recordsFilterToggle == '' || recordsFilterToggle == 'biocacheService-queryContext'? 'selected="selected"' : '' }>Wales</option>
+                                    <option value="biocacheService-altQueryContext" ${recordsFilterToggle == 'biocacheService-altQueryContext'? 'selected="selected"' : '' }>Wales + 20km buffer</option>
+                                </select>
+                                <g:if test="${params.fq}">
+                                    <g:each in="${filterQuery}" var="fq">
+                                        <input type="hidden" name="fq" value='${fq}'/>
+                                    </g:each>
+                                </g:if>
+                                <g:if test="${params.q}">
+                                    <input type="hidden" name="q" value='${params.q}'/>
+                                </g:if>
+                            </div>
+                        </form>
+
+                    </div>
+                </g:if>
             </div>
         </div>
     </header>
@@ -85,6 +126,9 @@
                                     <input type="hidden" name="fq" value='${fq}'/>
                                 </g:each>
                             </g:if>
+                            <g:if test="${params.includeRecordsFilter}">
+                                <input type="hidden" name="includeRecordsFilter" value='${params.includeRecordsFilter}'/>
+                            </g:if>
                             <span class="input-group-btn">
                                 <input type="submit" class="form-control btn btn-primary" alt="Search" value="Search"/>
                                 <input type="reset" class="form-control btn btn-primary" alt="Reset" value="Reset"
@@ -98,6 +142,7 @@
             </div>
         </div>
     </g:if>
+
 
     <div class="main-content panel panel-body">
         <g:if test="${searchResults.totalRecords}">
@@ -141,6 +186,8 @@
                 </div>
             </g:if>
 
+
+
             <!-- facets -->
             <g:each var="facetResult" in="${searchResults.facetResults}">
                 <g:if test="${!facetMap?.get(facetResult.fieldName) && !filterQuery?.contains(facetResult.fieldResult?.opt(0)?.label) && !facetResult.fieldName?.contains('idxtype1') && facetResult.fieldResult.length() > 0}">
@@ -171,6 +218,8 @@
                             </g:if>
                             <g:elseif test="${fieldResult.label?.endsWith("before")}"><%-- skip --%></g:elseif>
                             <g:elseif test="${fieldResult.label?.isEmpty()}">
+                            </g:elseif>
+                            <g:elseif test="${fieldResult.count == (searchResults?.totalRecords ?: 0) && (grailsApplication.config.search?.hideFacetsThatDoNotFilterFurther == 'true')}">
                             </g:elseif>
                             <g:else>
                                 <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
@@ -207,7 +256,7 @@
         </g:if>
 
                     <div class="result-options">
-                        <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: grailsApplication.config?.search?.defaultRows).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> results</span>
+                        <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> results</span>
 
                         <g:if test="${idxTypes.contains("TAXON")}">
                             <div class="download-button pull-right">
@@ -264,9 +313,8 @@
                                 <g:set var="sectionText"><g:if test="${!facetMap.idxtype}"><span><b>Section:</b> <g:message
                                         code="idxType.${result.idxType}"/></span></g:if></g:set>
                                 <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON'}">
-
-                                    <g:set var="taxonPageLink">${request.contextPath}/species/${result.linkIdentifier ?: result.guid}</g:set>
-                                    <g:set var="acceptedPageLink">${request.contextPath}/species/${result.acceptedConceptID ?: result.linkIdentifier ?: result.guid}</g:set>
+                                    <g:set var="taxonPageLink">${request.contextPath}/species/${result.guid ?: result.linkIdentifier}</g:set>
+                                    <g:set var="acceptedPageLink">${request.contextPath}/species/${result.acceptedConceptID ?: result.guid ?: result.linkIdentifier}</g:set>
                                     <g:if test="${result.image}">
                                         <div class="result-thumbnail">
                                             <a href="${acceptedPageLink}">
@@ -308,12 +356,12 @@
                                     </g:each>
                                 </g:if>
                                 <g:elseif test="${result.has("idxtype") && result.idxtype == 'COMMON'}">
-                                    <g:set var="speciesPageLink">${request.contextPath}/species/${result.linkIdentifier ?: result.taxonGuid}</g:set>
+                                    <g:set var="speciesPageLink">${request.contextPath}/species/${result.taxonGuid ?: result.linkIdentifier}</g:set>
                                     <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
                                         <a href="${speciesPageLink}">${result.name}</a></h4>
                                 </g:elseif>
                                 <g:elseif test="${result.has("idxtype") && result.idxtype == 'IDENTIFIER'}">
-                                    <g:set var="speciesPageLink">${request.contextPath}/species/${result.linkIdentifier ?: result.taxonGuid}</g:set>
+                                    <g:set var="speciesPageLink">${request.contextPath}/species/${result.taxonGuid ?: result.linkIdentifier}</g:set>
                                     <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
                                         <a href="${speciesPageLink}">${result.guid}</a></h4>
                                 </g:elseif>
@@ -415,9 +463,9 @@
 
                     <div>
                         <tb:paginate total="${searchResults?.totalRecords}"
-                             max="${params.rows ?: grailsApplication.config?.search?.defaultRows}"
+                             max="${params.rows ?: (grailsApplication.config?.search?.defaultRows?:10)}"
                              action="search"
-                             params="${[q: params.q, fq: params.fq, dir: (params.dir ?: grailsApplication.config?.search?.defaultSortOrder), sortField: (params.sortField ?: grailsApplication.config?.search?.defaultSortField), rows: (params.rows ?: grailsApplication.config?.search?.defaultRows)]}"/>
+                             params="${[q: params.q, fq: params.fq, dir: (params.dir ?: (grailsApplication.config?.search?.defaultSortOrder?:'desc')), sortField: (params.sortField ?: (grailsApplication.config?.search?.defaultSortField?:'score')), rows: (params.rows ?: (grailsApplication.config?.search?.defaultRows?:10))]}"/>
                     </div>
 
 
@@ -432,27 +480,18 @@
                             <h3><span id="occurrenceRecordCount">0</span> records
                                 <span id="occurrenceRecordCountAll"></span>
                                 from <span id="speciesCount">0</span> taxa
+                                <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+                                    <span class="map-pa-container">
+                                        <div id="map-pa-switch" class="map-pa-switch">
+                                            <input type="radio" class="map-pa-switch-input" name="toggle" value="presence" id="map-pa-presence" checked>
+                                            <label for="map-pa-presence" class="map-pa-switch-label map-pa-switch-label-off">Presence</label>
+                                            <input type="radio" class="map-pa-switch-input" name="toggle" value="absence" id="map-pa-absence">
+                                            <label for="map-pa-absence" class="map-pa-switch-label map-pa-switch-label-on">Absence</label>
+                                            <span class="map-pa-switch-selection"></span>
+                                        </div>
+                                    </span>
+                                </g:if>
                             </h3>
-                            <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
-                                <span id="toggleMapPresenceAbsence">
-                                    <span class="inner-container">
-                                        <span class="toggle">
-                                            <p>Absence</p>
-                                        </span>
-                                        <span class="toggle">
-                                            <p>Presence</p>
-                                        </span>
-                                    </span>
-                                    <span class="inner-container" id='toggleMapPresenceAbsence-toggle-container'>
-                                        <span class="toggle">
-                                            <p>Absence</p>
-                                        </span>
-                                        <span class="toggle">
-                                            <p>Presence</p>
-                                        </span>
-                                    </span>
-                                </span>
-                            </g:if>
                             <g:if test="${message(code: 'overview.map.button.records.map.subtitle', default: '')}">
                                 <p>${g.message(code: 'overview.map.button.records.map.subtitle')}</p>
                             </g:if>
@@ -515,7 +554,7 @@
                     var $results = $('#result-template').clone(true);
                     $results.attr('id', 'results-lists');
                     $results.removeClass('hide');
-                    console.log(searchResults)
+                    //console.log(searchResults)
                     if(searchResults.length > 0){
                         $results.find('.exploreYourAreaLink').html(searchResults[i].name);
                         $results.find('.exploreYourAreaLink').attr('href', '${grailsApplication.config.biocache.baseURL}/explore/your-area#' +
@@ -568,7 +607,7 @@ var MAP_CONF = {
     defaultMapId:               "${grailsApplication.config.map.default.id}",
     defaultMapToken:            "${grailsApplication.config.map.default.token}",
     recordsMapColour:           "${grailsApplication.config.map.records.colour}",
-    mapQueryContext:            "${grailsApplication.config.biocacheService.queryContext}",
+    mapQueryContext:            "${recordsFilterToggle == 'biocacheService-altQueryContext'? (grailsApplication.config?.biocacheService?.altQueryContext ?: '') : (grailsApplication.config?.biocacheService?.queryContext ?: '')}",
     additionalMapFilter:        "${raw(grailsApplication.config?.additionalMapFilter ?: '')}",
     map:                        null,
     mapOutline:                 ${grailsApplication.config.map.outline ?: 'false'},
@@ -577,7 +616,7 @@ var MAP_CONF = {
     mapEnvLegendHideMax:        "${grailsApplication.config.map.env?.legendhidemaxrange?:false}", //not used here
     mapLayersLabels:            "${grailsApplication.config.map.layers?.labels?:''}", //not used here
     mapLayersColours:           "${grailsApplication.config.map.layers?.colours?:''}", //not used here
-    mapLayersFqs:               "${grailsApplication.config.searchmap?.layers?.fqs ?: ''}",
+    mapLayersFqs:               "${grailsApplication.config.map?.layers?.fqs ?: ''}",
     showResultsMap:             ${grailsApplication.config?.search?.mapResults == 'true'},
     mapPresenceAndAbsence:      ${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'},
     resultsToMap:               "${(grailsApplication.config?.search?.mapPresenceAndAbsence == 'true') ? searchResultsPresence : searchResults}",
@@ -585,31 +624,14 @@ var MAP_CONF = {
     presenceOrAbsence:          "${(grailsApplication.config?.search?.mapPresenceAndAbsence == 'true') ? "presence" : ""}"
 };
 
-function tagResults() {
-    if (SHOW_CONF.resultSppListTag) {
-        var lsidsOnPage = "${lsids}".split("%20OR%20");
-        $.getJSON(SHOW_CONF.speciesListUrl + '/ws/speciesListItems/' + SHOW_CONF.resultSppListTag + '?callback=?', function( data ) {
-            for(var i = 0; i < data.length; i++) {
-                var spp = data[i];
-                var lsid = spp.lsid;
-                if ($.inArray(lsid, lsidsOnPage) > -1) {
-                    var linkTag = "species/" + lsid;
-                    var addTagsTo = $('h3 a[href$="' + linkTag + '"]');
-                    var tagHTML = $("<div/>").html(SHOW_CONF.resultSppListTagHTML).text();
-                    $(tagHTML).insertAfter(addTagsTo);
-                }
-            }
-        });
-    }
-}
+tagResults("${lsids}".split("%20OR%20"));
 
-
-
-tagResults();
-
-injectBiocacheResultsActual(MAP_CONF.allResultsOccurrenceRecords, SEARCH_CONF.maxSpecies);
-
-loadTheMap(MAP_CONF);
+<g:if test="${grailsApplication.config.search?.mapResults == 'true'}">
+    <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+        initialPresenceAbsenceMap(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
+    </g:if>
+    loadTheMap(MAP_CONF);
+</g:if>
 
 <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
     setPresenceAbsenceToggle(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");

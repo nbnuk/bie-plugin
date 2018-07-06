@@ -33,7 +33,7 @@ class BiocacheService {
         TYPE, SPECIMEN, OTHER
     }
 
-    def getQid(guids, title){
+    def getQid(guids, title, def biocacheQueryContext=''){
         def http = new HTTPBuilder(grailsApplication.config.biocacheService.baseURL +"/webportal/params")
 
         //http.getClient().getParams().setParameter("http.socket.timeout", getTimeout())
@@ -42,8 +42,13 @@ class BiocacheService {
         if (guids) {
             query = "lsid:" + guids.join(" OR lsid:")
         }
-        def postBody = [q:query, fq:"cl28:Wales", title: title]
-        //log.info "postBody = " + postBody
+        def postBody = [:]
+        if (biocacheQueryContext ) {
+            postBody = [q: query, fq: biocacheQueryContext, title: title]
+        } else {
+            postBody = [q: query, fq: grailsApplication.config.biocacheService.queryContext, title: title]
+        }
+        log.info "postBody = " + postBody
 
         try {
             http.post(body: postBody, requestContentType:groovyx.net.http.ContentType.URLENC){ resp, reader ->
@@ -84,9 +89,9 @@ class BiocacheService {
      * @param title
      * @return
      */
-    def performBatchSearch(guids, title) {
+    def performBatchSearch(guids, title, recordsFilter) {
 
-        def resp = getQid(guids, title)
+        def resp = getQid(guids, title, recordsFilter)
         if(resp?.status == 302){
             resp.result
         } else if (resp?.status == 200) {
