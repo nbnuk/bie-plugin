@@ -34,6 +34,7 @@ class BiocacheService {
     }
 
     def getQid(guids, title, def biocacheQueryContext=''){
+        log.info "here***"
         def http = new HTTPBuilder(grailsApplication.config.biocacheService.baseURL +"/webportal/params")
 
         //http.getClient().getParams().setParameter("http.socket.timeout", getTimeout())
@@ -95,7 +96,7 @@ class BiocacheService {
         if(resp?.status == 302){
             resp.result
         } else if (resp?.status == 200) {
-            log.debug "200 OK response"
+            log.info "200 OK response"
             def qid = resp.result
 
             def returnUrl = grailsApplication.config.biocache.baseURL + "/occurrences/search?q=qid:" + qid

@@ -80,7 +80,15 @@
                     <g:else>
                         <h4>Related Searches</h4>
                     </g:else>
-                    <ul class="list-unstyled"></ul>
+                    <ul class="list-unstyled">
+                    <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.download?.allcsv }">
+                        <li>Download Wales + 20km buffer records for all species as: <a href="${grailsApplication.config?.download?.allcsv}" alt="Download CSV" title="CSV">CSV</a>
+                        <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.download?.allshp }">
+                            <a href="${grailsApplication.config?.download?.allshp}" alt="Download Shapefile" title="Shapefile">SHP</a>
+                        </g:if>
+                        </li>
+                    </g:if>
+                    </ul>
                 </div>
                 <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.biocacheService?.altQueryContext }">
                     <div>
@@ -101,6 +109,16 @@
                                 <g:if test="${params.q}">
                                     <input type="hidden" name="q" value='${params.q}'/>
                                 </g:if>
+                                <g:if test="${params.sortField}">
+                                    <input type="hidden" name="sortField" value='${params.sortField}'/>
+                                </g:if>
+                                <g:if test="${params.dir}">
+                                    <input type="hidden" name="dir" value='${params.dir}'/>
+                                </g:if>
+                                <g:if test="${params.rows}">
+                                    <input type="hidden" name="rows" value='${params.rows}'/>
+                                </g:if>
+                                %{-- page will be reset, since we don't know if there might be fewer records this time --}%
                             </div>
                         </form>
 
@@ -189,6 +207,7 @@
 
 
             <!-- facets -->
+            <!-- todo: sorting in non-no-of-results-descending-order -->
             <g:each var="facetResult" in="${searchResults.facetResults}">
                 <g:if test="${!facetMap?.get(facetResult.fieldName) && !filterQuery?.contains(facetResult.fieldResult?.opt(0)?.label) && !facetResult.fieldName?.contains('idxtype1') && facetResult.fieldResult.length() > 0}">
 

@@ -125,6 +125,7 @@ function reloadWithParam(paramName, paramValue) {
     var sort = $.getQueryParam('sortField');
     var dir = $.getQueryParam('dir');
     var rows = $.getQueryParam('rows');
+    var includeRecordsFilter = $.getQueryParam('includeRecordsFilter');
     // add query param
     if (q != null) {
         paramList.push("q=" + q);
@@ -144,6 +145,9 @@ function reloadWithParam(paramName, paramValue) {
     // add rows param if already set
     if (paramName != 'rows' && rows != null) {
         paramList.push('rows' + "=" + rows);
+    }
+    if (includeRecordsFilter) {
+        paramList.push('includeRecordsFilter' + '=' + includeRecordsFilter);
     }
     // add the changed value
     if (paramName != null && paramValue != null) {

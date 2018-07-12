@@ -50,14 +50,41 @@ function loadSpeciesLists(){
             var specieslist = data[i];
             var maxListFields = 10;
 
+            addNNSSbiosecurityLinks($('<textarea />').html(SHOW_CONF.speciesListLinks).text(), specieslist.dataResourceUid);
+
+            if (specieslist.kvpValues.length > 0) {
+                $.each(specieslist.kvpValues, function (idx, kvpValue) {
+                    //check whether to add to headline for species
+                    $.each(listHeadlines, function (idx, listHeadline) {
+                        if (specieslist.dataResourceUid + ':' + kvpValue.key == listHeadline && value && !addedToHeadline[idx]) { //for when listHeadline=[dataset]:[key] to show key value for the species list
+                            var sppListHeaderHTML = "<h5 class='inline-head'><strong>" + kvpValue.key + ":</strong> ";
+                            sppListHeaderHTML += "<span class='species-headline-" + listHeadline + '-' + kvpValue.key + "'>" + value + "</span>";
+                            sppListHeaderHTML += "</h5>";
+                            $(sppListHeaderHTML).appendTo(".header-inner");
+                            addedToHeadline[idx] = true;
+                        } else if (specieslist.dataResourceUid == listHeadline && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
+                            var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadline + "'>" + specieslist.list.listName;
+                            sppListHeaderHTML += "</h5>";
+                            $(sppListHeaderHTML).appendTo(".header-inner");
+                            addedToHeadline[idx] = true;
+                        }
+                    });
+                });
+            }
+
+            //add header link to nonnativespecies.org entry if tagged species (INNS specific)
+            if (SHOW_CONF.speciesShowNNSSlink == "true") {
+                if (SHOW_CONF.speciesTagIfInList == specieslist.dataResourceUid) {
+                    addNNSSlink(true, specieslist.list.listName);
+                }
+            }
+
             if (specieslist.list.isBIE) {
                 var $description = $('#descriptionTemplate').clone();
                 $description.css({'display': 'block'});
                 $description.attr('id', '#specieslist-block-' + specieslist.dataResourceUid);
                 $description.addClass('species-list-block');
                 $description.find(".title").html(specieslist.list.listName);
-
-                addNNSSbiosecurityLinks($('<textarea />').html(SHOW_CONF.speciesListLinks).text(), specieslist.dataResourceUid);
 
                 if (specieslist.kvpValues.length > 0) {
                     var content = "<table class='table'>";
@@ -70,22 +97,6 @@ function loadSpeciesLists(){
                             value = kvpValue.vocabValue;
                         }
                         content += "<tr><td>" + (kvpValue.key + "</td><td>" + value + "</td></tr>");
-
-                        //check whether to add to headline for species
-                        $.each(listHeadlines, function (idx, listHeadline) {
-                            if (specieslist.dataResourceUid + ':' + kvpValue.key == listHeadline && value && !addedToHeadline[idx]) { //for when listHeadline=[dataset]:[key] to show key value for the species list
-                                var sppListHeaderHTML = "<h5 class='inline-head'><strong>" + kvpValue.key + ":</strong> ";
-                                sppListHeaderHTML += "<span class='species-headline-" + listHeadline + '-' + kvpValue.key + "'>" + value + "</span>";
-                                sppListHeaderHTML += "</h5>";
-                                $(sppListHeaderHTML).appendTo(".header-inner");
-                                addedToHeadline[idx] = true;
-                            } else if (specieslist.dataResourceUid == listHeadline && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
-                                var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadline + "'>" + specieslist.list.listName;
-                                sppListHeaderHTML += "</h5>";
-                                $(sppListHeaderHTML).appendTo(".header-inner");
-                                addedToHeadline[idx] = true;
-                            }
-                        });
                     });
                     content += "</table>";
                     $description.find(".content").html(content);
@@ -99,13 +110,6 @@ function loadSpeciesLists(){
                             addedToHeadline[idx] = true;
                         }
                     });
-                }
-
-                //add header link to nonnativespecies.org entry if tagged species (INNS specific)
-                if (SHOW_CONF.speciesShowNNSSlink == "true") {
-                    if (SHOW_CONF.speciesTagIfInList == specieslist.dataResourceUid) {
-                        addNNSSlink(true, specieslist.list.listName);
-                    }
                 }
 
                 $description.find(".source").css({'display':'none'});
