@@ -286,13 +286,14 @@ class SpeciesController {
         pageResultsOccsAbsence = 0
 
         def sr
-        def rows = grailsApplication.config?.search?.speciesLimit ?: 100
-        if ((pageResults?.totalRecords ?: 0) > rows.toInteger()) { //must load all results
+        def rows = params.rows?:(grailsApplication.config?.search?.defaultRows?:10)
+        def rowsMax = grailsApplication.config?.search?.speciesLimit ?: 100
+        if ((pageResults?.searchResults?.totalRecords ?: 0) > rows.toInteger()) { //must load all results
             // its horrible to call twice, once for single page and once for all results, but that seems to be what we have to do
             def query = params.q ?: "".trim()
             if (query == "*") query = ""
             def filterQuery = params.list('fq') // will be a list even with only one value
-            def startIndex = 0
+            def recordsFilter = getRecordsFilter()
 
             def sortField = params.sortField ?: (grailsApplication.config?.search?.defaultSortField ?: "")
             def sortDirection = params.dir ?: (grailsApplication.config?.search?.defaultSortOrder ?: "desc")
@@ -301,9 +302,9 @@ class SpeciesController {
                 sortField = "score" // default sort (field) of "score" when order is defined on its own
             }
 
-            def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
+            def requestObj = new SearchRequestParamsDTO(query, filterQuery, 0, rowsMax, sortField, sortDirection)
             log.info "SearchRequestParamsDTO = " + requestObj
-            def searchResults = bieService.searchBie(requestObj)
+            def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)
 
             sr = searchResults?.searchResults
         } else {

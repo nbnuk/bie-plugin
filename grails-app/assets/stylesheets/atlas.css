@@ -168,6 +168,32 @@ html, body {height:100%;}
 
 }
 
+@media screen and (min-width: 845px) {
+    #free-text-search-left-of-alt-query {
+        position: absolute;
+        bottom: 0;
+    }
+}
+
+/*
+@media screen and (max-width: 844px) {
+    #freetext-filter-buttons {
+        display: inline;
+    }
+}
+*/
+
+#records-include-filter-form {
+    padding-left:8px
+}
+
+.biocacheRecordsLink {
+    float:right;
+}
+#biocacheContextPick {
+    padding-right: 0px;
+    float: right;
+}
 
 /* map presence-absence toggle
 ============================================

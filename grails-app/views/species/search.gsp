@@ -38,7 +38,8 @@
             biocacheQueryContext: "${grailsApplication.config?.biocacheService.queryContext ?: ''}",
             geocodeLookupQuerySuffix: "${grailsApplication.config.geocode.querySuffix}",
             maxSpecies: ${grailsApplication.config?.search?.speciesLimit ?: 100},
-            isNBNinns: "${grailsApplication.config?.nbn?.inns ?: ''}"
+            isNBNinns: "${grailsApplication.config?.nbn?.inns ?: ''}",
+            recordsFilter: "${recordsFilter}"
         }
     </asset:script>
     <g:if test="${grailsApplication.config.search?.mapResults == 'true'}">
@@ -81,25 +82,72 @@
                         <h4>Related Searches</h4>
                     </g:else>
                     <ul class="list-unstyled">
+                    <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.search?.viewall }">
+                        <li>
+                            View all <a href="${grailsApplication.config?.search?.viewall}" alt="View" title="View occurrences records for all 305 INNS taxa">occurrence records</a>
+                        </li>
+                    </g:if>
                     <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.download?.allcsv }">
-                        <li>Download Wales + 20km buffer records for all species as: <a href="${grailsApplication.config?.download?.allcsv}" alt="Download CSV" title="CSV">CSV</a>
+                        <li>Download Wales + 20km buffer records for all species as: <a href="${grailsApplication.config?.download?.allcsv}" alt="Download CSV" title="Download occurrences records for all 305 INNS taxa in a CSV file">CSV</a>
                         <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.download?.allshp }">
-                            <a href="${grailsApplication.config?.download?.allshp}" alt="Download Shapefile" title="Shapefile">SHP</a>
+                            <a href="${grailsApplication.config?.download?.allshp}" alt="Download Shapefile" title="Download occurrences records for all 305 INNS taxa in a SHP file">SHP</a>
                         </g:if>
                         </li>
                     </g:if>
                     </ul>
                 </div>
-                <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.biocacheService?.altQueryContext }">
-                    <div>
+            </div>
+        </div>
+    </header>
+
+    <div class="section">
+        <div class="row">
+            <div class="col-sm-12">
+                <span class="col-sm-9" <g:if
+                        test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.biocacheService?.altQueryContext}">id="free-text-search-left-of-alt-query"</g:if>>
+                    <g:if test="${grailsApplication.config?.search?.includeFreeTextFilterOnResults == 'true'}">
+                        <form method="get"
+                              action="${grailsApplication.config.bie.baseURL}${grailsApplication.config.bie.searchPath}"
+                              role="search" class="navbar-form form-group" style="margin-bottom:0"
+                              id="freetext-filter-form">
+                            <div class="input-group" style="width:100%">
+                                <input type="text" autocomplete="off" placeholder="SEARCH" name="q" title="Search"
+                                       class="form-control ac_input general-search" id="freetext-filter"
+                                       <g:if test="${!query.isEmpty() && query != "*:*"}">value="${query.encodeAsHTML()}"</g:if>>
+
+                                <g:if test="${params.fq}">
+                                    <g:each in="${filterQuery}" var="fq">
+                                        <input type="hidden" name="fq" value='${fq}'/>
+                                    </g:each>
+                                </g:if>
+                                <g:if test="${params.includeRecordsFilter}">
+                                    <input type="hidden" name="includeRecordsFilter"
+                                           value='${params.includeRecordsFilter}'/>
+                                </g:if>
+                                <span class="input-group-btn" id="freetext-filter-buttons">
+                                    <input type="submit" class="form-control btn btn-primary" alt="Search"
+                                           value="Search"/>
+                                    <input type="reset" class="form-control btn btn-primary" alt="Reset" value="Reset"
+                                           onclick="$('#freetext-filter').val('');
+                                           $('#freetext-filter-form').submit();
+                                           return true;"/>
+                                </span>
+                            </div>
+                        </form>
+                    </g:if>
+                </span>
+
+                <span class="col-sm-3" id="biocacheContextPick">
+                    <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.biocacheService?.altQueryContext}">
                         <form method="get"
                               action="${grailsApplication.config.bie.baseURL}${grailsApplication.config.bie.searchPath}"
                               role="search" id="records-include-filter-form">
-                            <div class="input-group" >
+                            <div class="input-group">
                                 <label for="includeRecordsFilter">Include records for</label>
-                                <select class="form-control input-sm" id="includeRecordsFilter" name="includeRecordsFilter" onchange="this.form.submit()">
-                                    <option value="biocacheService-queryContext" ${recordsFilterToggle == '' || recordsFilterToggle == 'biocacheService-queryContext'? 'selected="selected"' : '' }>Wales</option>
-                                    <option value="biocacheService-altQueryContext" ${recordsFilterToggle == 'biocacheService-altQueryContext'? 'selected="selected"' : '' }>Wales + 20km buffer</option>
+                                <select class="form-control input-sm" id="includeRecordsFilter"
+                                        name="includeRecordsFilter" onchange="this.form.submit()">
+                                    <option value="biocacheService-queryContext" ${recordsFilterToggle == '' || recordsFilterToggle == 'biocacheService-queryContext' ? 'selected="selected"' : ''}>Wales</option>
+                                    <option value="biocacheService-altQueryContext" ${recordsFilterToggle == 'biocacheService-altQueryContext' ? 'selected="selected"' : ''}>Wales + 20km buffer</option>
                                 </select>
                                 <g:if test="${params.fq}">
                                     <g:each in="${filterQuery}" var="fq">
@@ -118,48 +166,15 @@
                                 <g:if test="${params.rows}">
                                     <input type="hidden" name="rows" value='${params.rows}'/>
                                 </g:if>
-                                %{-- page will be reset, since we don't know if there might be fewer records this time --}%
+                            %{-- page will be reset, since we don't know if there might be fewer records this time --}%
                             </div>
                         </form>
+                    </g:if>
+                </span>
 
-                    </div>
-                </g:if>
             </div>
         </div>
-    </header>
-    <g:if test="${grailsApplication.config?.search?.includeFreeTextFilterOnResults == 'true'}">
-        <div class="section">
-            <div class="row">
-                <div class="col-sm-9">
-                    <form method="get"
-                          action="${grailsApplication.config.bie.baseURL}${grailsApplication.config.bie.searchPath}"
-                          role="search" class="navbar-form form-group" id="freetext-filter-form">
-                        <div class="input-group" style="width:100%">
-                            <input type="text" autocomplete="off" placeholder="SEARCH" name="q" title="Search"
-                                   class="form-control ac_input general-search" id="freetext-filter"
-                                   <g:if test="${!query.isEmpty() && query != "*:*"}">value="${query.encodeAsHTML()}"</g:if>>
-
-                            <g:if test="${params.fq}">
-                                <g:each in="${filterQuery}" var="fq">
-                                    <input type="hidden" name="fq" value='${fq}'/>
-                                </g:each>
-                            </g:if>
-                            <g:if test="${params.includeRecordsFilter}">
-                                <input type="hidden" name="includeRecordsFilter" value='${params.includeRecordsFilter}'/>
-                            </g:if>
-                            <span class="input-group-btn">
-                                <input type="submit" class="form-control btn btn-primary" alt="Search" value="Search"/>
-                                <input type="reset" class="form-control btn btn-primary" alt="Reset" value="Reset"
-                                       onclick="$('#freetext-filter').val('');
-                                       $('#freetext-filter-form').submit();
-                                       return true;"/>
-                            </span>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </g:if>
+    </div>
 
 
     <div class="main-content panel panel-body">
@@ -205,9 +220,7 @@
             </g:if>
 
 
-
             <!-- facets -->
-            <!-- todo: sorting in non-no-of-results-descending-order -->
             <g:each var="facetResult" in="${searchResults.facetResults}">
                 <g:if test="${!facetMap?.get(facetResult.fieldName) && !filterQuery?.contains(facetResult.fieldResult?.opt(0)?.label) && !facetResult.fieldName?.contains('idxtype1') && facetResult.fieldResult.length() > 0}">
 
@@ -266,7 +279,7 @@
         <g:if test="${grailsApplication.config?.search?.mapResults == 'true'}">
             <div id="tabs" class="taxon-tabs">
                 <ul class="nav nav-tabs">
-                    <li class="active"><a id="t1" href="#tabs-1" data-toggle="tab">Results</a></li>
+                    <li class="active"><a id="t1" href="#tabs-1" data-toggle="tab">Taxa</a></li>
                     <li><a id="t2" href="#tabs-2" data-toggle="tab">Map</a></li>
                 </ul>
 
@@ -464,7 +477,7 @@
                                         </g:if>
                                         <g:if test="${grailsApplication.config.occurrenceCounts.enabled.toBoolean() && (result?.occurrenceCount ?: 0 > 0 || grailsApplication.config?.search?.showZeroOccurrences == "true")}">
                                             <li>
-                                                <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}">Occurrences:
+                                                <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}&fq=${recordsFilter}">Occurrences:
                                                 <g:formatNumber number="${result.occurrenceCount ?: 0}" type="number"/></a>
                                             </li>
                                         </g:if>
