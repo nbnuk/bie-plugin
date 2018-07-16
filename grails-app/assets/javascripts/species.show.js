@@ -50,7 +50,9 @@ function loadSpeciesLists(){
             var specieslist = data[i];
             var maxListFields = 10;
 
-            addNNSSbiosecurityLinks($('<textarea />').html(SHOW_CONF.speciesListLinks).text(), specieslist.dataResourceUid);
+            if (SHOW_CONF.speciesShowNNSSlink == "true") {
+                addNNSSbiosecurityLinks($('<textarea />').html(SHOW_CONF.speciesListLinks).text(), specieslist.dataResourceUid);
+            }
 
             if (specieslist.kvpValues.length > 0) {
                 $.each(specieslist.kvpValues, function (idx, kvpValue) {

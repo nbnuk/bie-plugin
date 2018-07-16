@@ -137,13 +137,21 @@ class BieService {
 
         //add a query context for biocache - this will influence record counts
         if (!overrideBiocacheContext) {
-            if (grailsApplication.config.biocacheService.queryContext) {
-                url = url + "&fq=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20") + "%20AND%20" + occFilter.replaceAll(" ", "%20") + ")"
+            if (grailsApplication.config.biocacheService?.queryContext) {
+                url = url + "&fq=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20")
+                if (occFilter) {
+                    url = url + "%20AND%20" + occFilter.replaceAll(" ", "%20")
+                }
+                url = url + ")"
             } else {
-                url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
+                if (occFilter) {
+                    url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
+                }
             }
         } else {
-            url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
+            if (occFilter) {
+                url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
+            }
         }
 
         if (grailsApplication.config?.additionalMapFilter) {

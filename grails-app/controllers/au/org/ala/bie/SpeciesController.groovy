@@ -200,7 +200,7 @@ class SpeciesController {
 
         } else {
 
-            if ((grailsApplication.config?.search?.mapPresenceAndAbsence?:"") == "true") {
+            if ((grailsApplication.config?.species?.mapPresenceAndAbsence?:"") == "true") {
                 pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence", recordsFilter, true)
                 pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence", recordsFilter, true)
                 allResultsOccs = pageResultsOccs = pageResultsOccsPresence + pageResultsOccsAbsence
@@ -313,25 +313,27 @@ class SpeciesController {
         if (sr) {
             sr.results.each { result ->
                 allResultsGuids << result.guid
-                allResultsOccs += result.occurrenceCount
+                allResultsOccs += result?.occurrenceCount?: 0
             }
         }
         sr = pageResults?.searchResults
         if (sr) {
             sr.results.each { result ->
-                pageResultsOccs += result.occurrenceCount
+                pageResultsOccs += result?.occurrenceCount?: 0
             }
         }
+
         sr = searchResultsPresence?.searchResults
         if (sr) {
             sr.results.each { result ->
-                pageResultsOccsPresence += result.occurrenceCount
+                pageResultsOccsPresence += result?.occurrenceCount?: 0
             }
         }
+
         sr = searchResultsAbsence?.searchResults
         if (sr) {
             sr.results.each { result ->
-                pageResultsOccsAbsence += result.occurrenceCount
+                pageResultsOccsAbsence += result?.occurrenceCount?: 0
             }
         }
     }

@@ -454,18 +454,18 @@ var MAP_CONF = {
         mapLayersFqs:               "${grailsApplication.config.map.layers?.fqs?:''}",
         mapLayersLabels:            "${grailsApplication.config.map.layers?.labels?:''}",
         mapLayersColours:           "${grailsApplication.config.map.layers?.colours?:''}",
-        showResultsMap:             ${grailsApplication.config?.search?.mapResults == 'true'},
-        mapPresenceAndAbsence:      ${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'},
-        resultsToMap:               "${(grailsApplication.config?.search?.mapPresenceAndAbsence == 'true') ? searchResultsPresence : searchResults}",
+        showResultsMap:             ${grailsApplication.config?.species?.mapResults == 'true'},
+        mapPresenceAndAbsence:      ${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'},
+        resultsToMap:               "${(grailsApplication.config?.species?.mapPresenceAndAbsence == 'true') ? searchResultsPresence : searchResults}",
         resultsToMapJSON:           null,
-        presenceOrAbsence:          "${(grailsApplication.config?.search?.mapPresenceAndAbsence == 'true') ? "presence" : ""}",
+        presenceOrAbsence:          "${(grailsApplication.config?.species?.mapPresenceAndAbsence == 'true') ? "presence" : ""}",
         guid:                       "${guid}",
         scientificName:             "${tc?.taxonConcept?.nameString ?: ''}"
 }
 
 $(function(){
     showSpeciesPage();
-    <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+    <g:if test="${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'}">
         initialPresenceAbsenceMap(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
     </g:if>
     loadTheMap(MAP_CONF)
@@ -487,7 +487,7 @@ $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
     }
 });
 
-<g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+<g:if test="${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'}">
     setPresenceAbsenceToggle(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
 </g:if>
 

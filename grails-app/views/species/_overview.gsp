@@ -86,10 +86,11 @@
                 <img id="distroMapImage" src="${resource(dir: 'images', file: 'noImage.jpg')}" class="distroImg" style="width:316px;" alt="occurrence map" onerror="this.style.display='none'"/>
                 <p class="mapAttribution">Compiled distribution map provided by <span id="dataResource">[data resource not known]</span></p>
             </div>
+            <g:if test="${grailsApplication.config.species?.mapResults == 'true'}">
             <div class="taxon-map">
                 <h3><span id="occurrenceRecordCount">0</span> records
                     <span id="occurrenceRecordCountAll"></span>
-                    <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
+                    <g:if test="${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'}">
                         <span class="map-pa-container">
                             <div id="map-pa-switch" class="map-pa-switch">
                                 <input type="radio" class="map-pa-switch-input" name="toggle" value="presence" id="map-pa-presence" checked>
@@ -145,6 +146,7 @@
                 </div>
 
             </div>
+            </g:if>
 
             <div class="panel panel-default panel-actions">
                 <div class="panel-body">
