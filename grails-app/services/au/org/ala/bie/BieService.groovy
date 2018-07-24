@@ -24,7 +24,6 @@ class BieService {
         if(grailsApplication.config.biocacheService.queryContext){
             queryUrl = queryUrl + "&bqc=" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ","%20")
         }
-
         log.info("queryUrl = " + queryUrl)
         def json = webService.get(queryUrl)
         JSON.parse(json)
@@ -48,12 +47,20 @@ class BieService {
         if (!overrideBiocacheContext) {
             if (grailsApplication.config.biocacheService.queryContext) {
                 //watch out for mutually exclusive conditions between queryContext and occFilter, e.g. if queryContext=occurrence_status:present and occFilter=occurrence_stats:absent then will get zero records returned
-                queryUrl = queryUrl + "&bqc=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20") + "%20AND%20" + occFilter.replaceAll(" ", "%20") + ")"
+                queryUrl = queryUrl + "&bqc=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20")
+                if (occFilter) {
+                    queryUrl = queryUrl + "%20AND%20" + occFilter.replaceAll(" ", "%20")
+                }
+                queryUrl = queryUrl + ")"
             } else {
-                queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20") + ")"
+                if (occFilter) {
+                    queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20")
+                }
             }
         } else {
-            queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20") + ")"
+            if (occFilter) {
+                queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20") + ")"
+            }
         }
 
         log.info("queryUrlOccFilter = " + queryUrl)
@@ -131,7 +138,7 @@ class BieService {
         }
     }
 
-    def getOccurrenceCountsForGuid(guid, presenceOrAbsence, occFilter, overrideBiocacheContext) {
+    def getOccurrenceCountsForGuid(guid, presenceOrAbsence, occFilter, overrideBiocacheContext, overrideAdditionalMapFilter) {
 
         def url = grailsApplication.config.biocacheService.baseURL + '/occurrences/taxaCount?guids=' + guid.replaceAll(/\s+/, '+')
 
@@ -154,8 +161,10 @@ class BieService {
             }
         }
 
-        if (grailsApplication.config?.additionalMapFilter) {
-            url = url + "&" + grailsApplication.config.additionalMapFilter.replaceAll(" ","%20")
+        if (!overrideAdditionalMapFilter) {
+            if (grailsApplication.config?.additionalMapFilter) {
+                url = url + "&" + grailsApplication.config.additionalMapFilter.replaceAll(" ", "%20")
+            }
         }
 
         if (presenceOrAbsence == 'presence') {

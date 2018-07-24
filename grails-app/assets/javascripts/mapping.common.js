@@ -171,7 +171,7 @@ function setMapTitle (MAP_CONF) {
         $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceAbsenceRecords.toLocaleString() + " absence");
     } else { //all records
         $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + "");
-        $('#occurrenceRecordCountAll').html(""); //reduce clutter
+        $('#occurrenceRecordCountAll').html("(" + MAP_CONF.allResultsOccurrenceRecordsNoMapFilter.toLocaleString() + " in total)");
     }
     if (MAP_CONF.mapType == 'search') {
         $('#speciesCount').html(Object.keys(speciesLayers._layers).length);

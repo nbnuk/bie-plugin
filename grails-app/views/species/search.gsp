@@ -59,7 +59,7 @@
                     <h1>
                         Wales INNS portal<g:if test="${searchResults.queryTitle != 'all records' && searchResults.queryTitle != '*:*'}"> for <strong>${searchResults.queryTitle}</strong></g:if>
                     </h1>
-                    This page provides information on the 198 invasive non-native species currently of most interest to Wales<br/>
+                    This page provides information on the ${grailsApplication.config?.nbn?.innsSpeciesCount?: ""} invasive non-native species currently of most interest to Wales<br/>
                     <small>
                         By accessing records via the web service users accept that any <a title="data license" href="https://docs.nbnatlas.org/data-licenses/">CC-BY-NC</a> licenced records must not be used for commercial purposes without the permission of the data provider and all data providers must be acknowledged as required.
                     </small>
@@ -84,13 +84,13 @@
                     <ul class="list-unstyled">
                     <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.search?.viewall }">
                         <li>
-                            View all <a href="${grailsApplication.config?.search?.viewall}" alt="View" title="View occurrences records for all 305 INNS taxa">occurrence records</a>
+                            View all <a href="${grailsApplication.config?.search?.viewall}" alt="View" title="View occurrences records for all ${grailsApplication.config?.nbn?.innsSpeciesCount?: ""} INNS taxa">occurrence records</a>
                         </li>
                     </g:if>
                     <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.download?.allcsv }">
-                        <li>Download Wales + 20km buffer records for all species as: <a href="${grailsApplication.config?.download?.allcsv}" alt="Download CSV" title="Download occurrences records for all 305 INNS taxa in a CSV file">CSV</a>
+                        <li>Download Wales + 20km buffer records for all species as: <a href="${grailsApplication.config?.download?.allcsv}" alt="Download CSV" title="Download occurrences records for all ${grailsApplication.config?.nbn?.innsSpeciesCount?: ""} INNS taxa in a CSV file">CSV</a>
                         <g:if test="${grailsApplication.config?.nbn?.inns == 'true' && grailsApplication.config?.download?.allshp }">
-                            <a href="${grailsApplication.config?.download?.allshp}" alt="Download Shapefile" title="Download occurrences records for all 305 INNS taxa in a SHP file">SHP</a>
+                            <a href="${grailsApplication.config?.download?.allshp}" alt="Download Shapefile" title="Download occurrences records for all ${grailsApplication.config?.nbn?.innsSpeciesCount?: ""} INNS taxa in a SHP file">SHP</a>
                         </g:if>
                         </li>
                     </g:if>
@@ -119,6 +119,22 @@
                                     <g:each in="${filterQuery}" var="fq">
                                         <input type="hidden" name="fq" value='${fq}'/>
                                     </g:each>
+                                </g:if>
+                                <g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">
+                                    %{-- hardcoded change to sort-by and ordering --}%
+                                    <input type="hidden" name="sortField" value='score'/>
+                                    <input type="hidden" name="dir" value='desc'/>
+                                </g:if>
+                                <g:else>
+                                    <g:if test="${params.sortField}">
+                                        <input type="hidden" name="sortField" value='${params.sortField}'/>
+                                    </g:if>
+                                    <g:if test="${params.dir}">
+                                        <input type="hidden" name="dir" value='${params.dir}'/>
+                                    </g:if>
+                                </g:else>
+                                <g:if test="${params.rows}">
+                                    <input type="hidden" name="rows" value='${params.rows}'/>
                                 </g:if>
                                 <g:if test="${params.includeRecordsFilter}">
                                     <input type="hidden" name="includeRecordsFilter"
@@ -279,7 +295,7 @@
         <g:if test="${grailsApplication.config?.search?.mapResults == 'true'}">
             <div id="tabs" class="taxon-tabs">
                 <ul class="nav nav-tabs">
-                    <li class="active"><a id="t1" href="#tabs-1" data-toggle="tab">Taxa</a></li>
+                    <li class="active"><a id="t1" href="#tabs-1" data-toggle="tab"><g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">Taxa</g:if><g:else>Results</g:else></a></li>
                     <li><a id="t2" href="#tabs-2" data-toggle="tab">Map</a></li>
                 </ul>
 
@@ -288,7 +304,7 @@
         </g:if>
 
                     <div class="result-options">
-                        <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> results</span>
+                        <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> <g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">taxa</g:if><g:else>results</g:else></span>
 
                         <g:if test="${idxTypes.contains("TAXON")}">
                             <div class="download-button pull-right">
@@ -304,7 +320,7 @@
 
                         <form class="form-inline">
                             <div class="form-group">
-                                <label for="per-page">Results per page</label>
+                                <label for="per-page"><g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">Taxa</g:if><g:else>Results</g:else> per page</label>
                                 <select class="form-control input-sm" id="per-page" name="per-page">
                                     <option value="10" ${(params.rows == '10' || (!params.rows && grailsApplication.config?.search?.defaultRows == '10')) ? "selected=\"selected\"" : ""}>10</option>
                                     <option value="20" ${(params.rows == '20' || (!params.rows && grailsApplication.config?.search?.defaultRows == '20')) ? "selected=\"selected\"" : ""}>20</option>

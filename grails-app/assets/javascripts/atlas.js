@@ -49,6 +49,7 @@ $(function(){
 			addLikeDislikeButton: true,
 			addPreferenceButton: SHOW_CONF.addPreferenceButton,
 			attribution: attribution,
+			organisationName: SHOW_CONF.organisationName,
 			disableLikeDislikeButton: SHOW_CONF.disableLikeDislikeButton,
 			likeUrl: SHOW_CONF.likeUrl + '?id=' + imageId,
 			dislikeUrl: SHOW_CONF.dislikeUrl + '?id=' + imageId,

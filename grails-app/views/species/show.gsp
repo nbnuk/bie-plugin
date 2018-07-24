@@ -414,6 +414,7 @@
         getPreferredSpeciesListUrl: "${grailsApplication.config.speciesList.baseURL}",
         druid: "${grailsApplication.config.speciesList.preferredSpeciesListDruid}",
         addPreferenceButton: ${imageClient.checkAllowableEditRole()},
+        organisationName: "${grailsApplication.config.skin?.orgNameLong}",
 
         speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}",
         speciesAdditionalHeadlinesSpeciesList: "${grailsApplication.config.species?.additionalHeadlinesSpeciesList?:''}",
@@ -431,6 +432,7 @@ var MAP_CONF = {
         biocacheServiceUrl:         "${grailsApplication.config.biocacheService.baseURL}",
         biocacheUrl:                "${grailsApplication.config.biocache.baseURL}",
         allResultsOccurrenceRecords:            ${allResultsOccurrenceRecords},
+        allResultsOccurrenceRecordsNoMapFilter: ${allResultsOccurrenceRecordsNoMapFilter},
         pageResultsOccurrenceRecords:           ${pageResultsOccurrenceRecords},
         pageResultsOccurrencePresenceRecords:   ${pageResultsOccurrencePresenceRecords},
         pageResultsOccurrenceAbsenceRecords:    ${pageResultsOccurrenceAbsenceRecords},
