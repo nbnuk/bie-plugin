@@ -124,8 +124,17 @@ function reloadWithParam(paramName, paramValue) {
     var q = $.getQueryParam('q') ? $.getQueryParam('q') : SEARCH_CONF.query ;
     var fqList = $.getQueryParam('fq'); //$.query.get('fq');
     var sort = $.getQueryParam('sortField');
+    if (sort == null || sort === undefined) {
+        sort = $('#sort-by').find(":selected").val();
+    }
     var dir = $.getQueryParam('dir');
+    if (dir == null || dir === undefined) {
+        dir = $('#sort-order').find(":selected").val();
+    }
     var rows = $.getQueryParam('rows');
+    if (rows == null || rows === undefined) {
+        rows = $('#per-page').find(":selected").val();
+    }
     var includeRecordsFilter = $.getQueryParam('includeRecordsFilter');
     // add query param
     if (q != null) {
@@ -136,7 +145,7 @@ function reloadWithParam(paramName, paramValue) {
         paramList.push("fq=" + fqList.join("&fq="));
     }
     // add sort param if already set
-    if (paramName != 'sortField' && sort != null) {
+    if (paramName != 'sortField' && (sort != null && sort !== undefined)) {
         paramList.push('sortField' + "=" + sort);
     }
     // add dir param if already set
@@ -155,7 +164,7 @@ function reloadWithParam(paramName, paramValue) {
         paramList.push(paramName + "=" +paramValue);
     }
     //alert("paramName = " + paramName + " and paramValue = " + paramValue);
-    //alert("params = "+paramList.join("&"));
+    alert("params = "+paramList.join("&"));
     window.location.href = window.location.pathname + '?' + paramList.join('&');
 }
 
