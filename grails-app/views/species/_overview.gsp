@@ -88,7 +88,7 @@
             </div>
             <g:if test="${grailsApplication.config.species?.mapResults == 'true'}">
             <div class="taxon-map">
-                <h3><span id="occurrenceRecordCount">0</span> records
+                <h3><span id="occurrenceRecordCount">[counting]</span> records
                     <span id="occurrenceRecordCountAll"></span>
                     <g:if test="${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'}">
                         <span class="map-pa-container">

@@ -179,7 +179,7 @@ class BieService {
             String key = (String) keys.next()
             response.get(key)
         } catch (Exception e){
-            log.warn "Problem retrieving occurrence information for Taxon: " + guid
+            log.info "Problem retrieving occurrence information for Taxon: " + guid
             null
         }
     }

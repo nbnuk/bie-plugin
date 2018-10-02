@@ -163,15 +163,28 @@ function addLegendItem(name, red, green, blue, rgbhex, hiderangemax){
 }
 
 function setMapTitle (MAP_CONF) {
-    $('#occurrenceRecordCountAll').html("(" + MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + " in total)");
-    $(".occurrenceRecordCount").html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString()); //species show charts tab
+    //added checks for >= 0 because if -1 then webservice call timed out
+    if( MAP_CONF.pageResultsOccurrenceRecords >= 0) {
+        $('#occurrenceRecordCountAll').html("(" + MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + " in total)");
+    }
+    if (MAP_CONF.pageResultsOccurrenceRecords >= 0) {
+        $(".occurrenceRecordCount").html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString()); //species show charts tab
+    }
     if (MAP_CONF.presenceOrAbsence == 'presence') {
-        $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrencePresenceRecords.toLocaleString() + " presence");
+        if (MAP_CONF.pageResultsOccurrencePresenceRecords >= 0) {
+            $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrencePresenceRecords.toLocaleString() + " presence");
+        }
     } else if (MAP_CONF.presenceOrAbsence == 'absence') {
-        $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceAbsenceRecords.toLocaleString() + " absence");
+        if (MAP_CONF.pageResultsOccurrenceAbsenceRecords >= 0) {
+            $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceAbsenceRecords.toLocaleString() + " absence");
+        }
     } else { //all records
-        $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + "");
-        $('#occurrenceRecordCountAll').html("(" + MAP_CONF.allResultsOccurrenceRecordsNoMapFilter.toLocaleString() + " in total)");
+        if (MAP_CONF.pageResultsOccurrenceRecords >= 0) {
+            $('#occurrenceRecordCount').html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString() + "");
+        }
+        if (MAP_CONF.allResultsOccurrenceRecordsNoMapFilter >= 0) {
+            $('#occurrenceRecordCountAll').html("(" + MAP_CONF.allResultsOccurrenceRecordsNoMapFilter.toLocaleString() + " in total)");
+        }
     }
     if (MAP_CONF.mapType == 'search') {
         $('#speciesCount').html(Object.keys(speciesLayers._layers).length);

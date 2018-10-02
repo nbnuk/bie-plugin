@@ -181,7 +181,7 @@ class SpeciesController {
         def taxonDetails = bieService.getTaxonConcept(guid)
         log.debug "show - guid = ${guid} "
 
-        recordsFilter = getRecordsFilter()
+        def recordsFilter = getRecordsFilter()
 
         if (!taxonDetails) {
             log.error "Error requesting taxon concept object: " + guid
@@ -201,17 +201,34 @@ class SpeciesController {
             redirect(uri: "/species/${taxonDetails.taxonConcept.guid}")
 
         } else {
+            def pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence", recordsFilter, true, false)
+            def pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence", recordsFilter, true, false)
+            def allResultsOccs = pageResultsOccsPresence + pageResultsOccsAbsence
+            if (pageResultsOccsPresence == null) {
+                pageResultsOccsPresence = -1
+                allResultsOccs = -1
+            }
+            if (pageResultsOccsAbsence == null) {
+                pageResultsOccsAbsence = -1
+                allResultsOccs = -1
+            }
+            def pageResultsOccs = allResultsOccs
+            def allResultsOccsNoMapFilter = 0
             if ((grailsApplication.config?.species?.mapPresenceAndAbsence?:"") == "true") {
-                pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence", recordsFilter, true, false)
-                pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence", recordsFilter, true, false)
-                allResultsOccs = pageResultsOccs = pageResultsOccsPresence + pageResultsOccsAbsence
+                //have all info needed
             } else {
-                allResultsOccs = pageResultsOccs = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all", recordsFilter, true, false)
-                allResultsOccsNoMapFilter = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all", recordsFilter, true, true)
+                //allResultsOccs = pageResultsOccs = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all", recordsFilter, true, false)
+                if (grailsApplication.config?.additionalMapFilter == "fq=occurrence_status:present" || grailsApplication.config?.additionalMapFilter == "fq=-occurrence_status:present") {
+                    //for these common options don't make *another* web service call
+                    allResultsOccsNoMapFilter = allResultsOccs
+                } else {
+                    allResultsOccsNoMapFilter = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all", recordsFilter, true, true)
+                    if (allResultsOccsNoMapFilter == null) allResultsOccsNoMapFilter = -1
+                }
             }
             def jsonSlurper = new JsonSlurper()
             //fake up a search results JSON object to look like that returned for species search list jsonSlurper.parseText(
-            def searchResults = '{ "results": [{"occurrenceCount":"' + allResultsOccs + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"xxxx"}] }'
+            def searchResults = '{ "results": [{"occurrenceCount":"' + allResultsOccs + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
             def searchResultsPresence = '{ "results": [{"occurrenceCount":"' + pageResultsOccsPresence + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
             def searchResultsAbsence = '{ "results": [{"occurrenceCount":"' + pageResultsOccsAbsence + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
 

@@ -525,9 +525,9 @@
                     <div class="result-options">
 
                         <div class="taxon-map">
-                            <h3><span id="occurrenceRecordCount">0</span> records
+                            <h3><span id="occurrenceRecordCount">[counting]</span> records
                                 <span id="occurrenceRecordCountAll"></span>
-                                from <span id="speciesCount">0</span> taxa
+                                from <span id="speciesCount">[counting]</span> taxa
                                 <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">
                                     <span class="map-pa-container">
                                         <div id="map-pa-switch" class="map-pa-switch">

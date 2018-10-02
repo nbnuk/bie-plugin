@@ -164,7 +164,7 @@ function reloadWithParam(paramName, paramValue) {
         paramList.push(paramName + "=" +paramValue);
     }
     //alert("paramName = " + paramName + " and paramValue = " + paramValue);
-    alert("params = "+paramList.join("&"));
+    //alert("params = "+paramList.join("&"));
     window.location.href = window.location.pathname + '?' + paramList.join('&');
 }
 
@@ -211,7 +211,7 @@ function injectBiocacheResults() {
     var queryToUse = (SEARCH_CONF.query == "" || SEARCH_CONF.query == "*" ? "*:*" : SEARCH_CONF.query);
     var biocacheContextUnencoded = $('<textarea />').html(SEARCH_CONF.biocacheQueryContext).text(); //to convert e.g. &quot; back to "
     var url = SEARCH_CONF.biocacheServicesUrl + "/occurrences/search.json?q=" + queryToUse + "&start=0&pageSize=0&facet=off&qc=" + biocacheContextUnencoded;
-    console.log("url", url);
+    console.log("url_biocache: " + url);
     $.ajax({
         url: url,
         dataType: 'jsonp',
