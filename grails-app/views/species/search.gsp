@@ -292,6 +292,17 @@
     </div>
 
     <div class="col-sm-9">
+        <g:if test="${idxTypes.contains("TAXON") || (grailsApplication.config.nbn?.alwaysshowdownloadbutton?:'') == 'true'}">
+            <div class="download-button pull-right">
+                <g:set var="downloadUrl"
+                       value="${grailsApplication.config.bie.index.url}/download?${request.queryString ?: ''}${((grailsApplication.config.bieService.queryContext?:'').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
+                <a class="btn btn-default active btn-small" href="${downloadUrl}"
+                   title="Download a list of taxa for your search">
+                    <i class="glyphicon glyphicon-download"></i>
+                    Download
+                </a>
+            </div>
+        </g:if>
         <g:if test="${grailsApplication.config?.search?.mapResults == 'true'}">
             <div id="tabs" class="taxon-tabs">
                 <ul class="nav nav-tabs">
@@ -306,17 +317,7 @@
                     <div class="result-options">
                         <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> <g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">taxa</g:if><g:else>results</g:else></span>
 
-                        <g:if test="${idxTypes.contains("TAXON")}">
-                            <div class="download-button pull-right">
-                                <g:set var="downloadUrl"
-                                    value="${grailsApplication.config.bie.index.url}/download?${request.queryString ?: ''}${grailsApplication.config.bieService.queryContext}"/>
-                                <a class="btn btn-default active btn-small" href="${downloadUrl}"
-                                    title="Download a list of taxa for your search">
-                                    <i class="glyphicon glyphicon-download"></i>
-                                    Download
-                                </a>
-                            </div>
-                        </g:if>
+
 
                         <form class="form-inline">
                             <div class="form-group">

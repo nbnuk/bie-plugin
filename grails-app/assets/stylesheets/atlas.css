@@ -189,6 +189,8 @@ html, body {height:100%;}
 
 .biocacheRecordsLink {
     float:right;
+    clear:both;
+    margin-top:10px;
 }
 #biocacheContextPick {
     padding-right: 0px;
