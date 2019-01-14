@@ -134,9 +134,9 @@ function addAlerts(){
         var searchString = "?q=" + SHOW_CONF.guid;
         var url = SHOW_CONF.alertsUrl + "/webservice/createBiocacheNewRecordsAlert?";
         url += "queryDisplayName=" + encodeURIComponent(query);
-        url += "&baseUrlForWS=" + encodeURIComponent(SHOW_CONF.biocacheUrl);
+        url += "&baseUrlForWS=" + encodeURIComponent(SHOW_CONF.biocacheServiceUrl); /* was biocacheUrl */
         url += "&baseUrlForUI=" + encodeURIComponent(SHOW_CONF.serverName);
-        url += "&webserviceQuery=%2Fws%2Foccurrences%2Fsearch" + encodeURIComponent(searchString);
+        url += "&webserviceQuery=%2Foccurrences%2Fsearch" + encodeURIComponent(searchString); /* remove /ws/ */
         url += "&uiQuery=%2Foccurrences%2Fsearch%3Fq%3D*%3A*";
         url += "&resourceName=" + encodeURIComponent("Atlas");
         window.location.href = url;
