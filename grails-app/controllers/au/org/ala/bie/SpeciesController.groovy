@@ -17,7 +17,10 @@ package au.org.ala.bie
 import au.org.ala.bie.webapp2.SearchRequestParamsDTO
 import grails.converters.JSON
 import groovy.json.JsonSlurper
+import org.apache.commons.lang.WordUtils
 import org.grails.web.json.JSONObject
+import org.apache.commons.lang.StringUtils
+
 
 /**
  * Species Controller
@@ -40,6 +43,8 @@ class SpeciesController {
     def pageResultsOccsPresence = 0
     def pageResultsOccsAbsence = 0
     def recordsFilter = ''
+
+    def pageGroups = []
 
     def geoSearch = {
 
@@ -89,13 +94,30 @@ class SpeciesController {
         if(query == "*") query = ""
         def filterQuery = params.list('fq') // will be a list even with only one value
         def startIndex = params.offset?:0
-        def rows = params.rows?:(grailsApplication.config?.search?.defaultRows?:10)
+
+        def showAsCompact = (grailsApplication.config?.search?.compactResults ?: 'false').toBoolean()
+        if (grailsApplication.config.search?.compactResultsGroupBy?:"" != "") {
+            if ((grailsApplication.config.search?.compactResultsOnlyWhenPageParam ?: 'false').toBoolean() && !(params?.compact ?: 'false').toBoolean()) {
+                showAsCompact = false
+            }
+        }
+        def rows
+        if (showAsCompact) {
+            rows = params.rows ?: (grailsApplication.config?.search?.compactResultsRows ?: 100)
+        } else {
+            rows = params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)
+        }
+
         def sortField = params.sortField?:(grailsApplication.config?.search?.defaultSortField?:"")
         def sortDirection = params.dir?:(grailsApplication.config?.search?.defaultSortOrder?:"desc")
         //log.info "SortField= " + sortField
         //log.info "SortDir= " + sortDirection
         if (params.dir && !params.sortField) {
             sortField = "score" // default sort (field) of "score" when order is defined on its own
+        }
+        if (showAsCompact) {
+            sortField = 'scientificName' //hardcoded
+            sortDirection = 'asc'
         }
         recordsFilter = getRecordsFilter()
 
@@ -142,6 +164,12 @@ class SpeciesController {
             render(view: '../error', model: [message: searchResults.error])
         } else {
             setResultStats(searchResults, searchResultsPresence, searchResultsAbsence)
+            if (grailsApplication.config.search?.compactResultsGroupBy?:"" != "") {
+                setResultGroups(searchResults, grailsApplication.config.search?.compactResultsGroupBy)
+            }
+            def jsonSlurper = new JsonSlurper()
+            def facetsOnlyShowValuesJson = jsonSlurper.parseText((grailsApplication.config.facetsOnlyShowValues ?: "[]"))
+
             render(view: 'search', model: [
                     searchResults: searchResults?.searchResults,
                     searchResultsPresence: searchResultsPresence?.searchResults,
@@ -159,7 +187,12 @@ class SpeciesController {
                     pageResultsOccurrencePresenceRecords: pageResultsOccsPresence,
                     pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence,
                     recordsFilterToggle: params.includeRecordsFilter ?: "",
-                    recordsFilter: recordsFilter
+                    recordsFilter: recordsFilter,
+                    compactResults: showAsCompact,
+                    pageGroups: pageGroups,
+                    pageGroupBy: grailsApplication.config?.search?.compactResultsGroupBy ?: '',
+                    compactResultsRemoveFacets: (grailsApplication.config?.search?.compactResultsRemoveFacets ?: 'false').toBoolean(),
+                    facetsOnlyShowValues: facetsOnlyShowValuesJson
             ])
         }
     }
@@ -356,6 +389,29 @@ class SpeciesController {
                 pageResultsOccsAbsence += result?.occurrenceCount?: 0
             }
         }
+    }
+
+    def setResultGroups (pageResults, groupField) {
+        pageGroups = []
+        def sr
+        def areOthers = false
+        sr = pageResults?.searchResults
+        if (sr) {
+            sr.results.each { result ->
+                if (result[ groupField ]) {
+                    def grp = result[ groupField ]
+                    if (grp instanceof Collection) {
+                        pageGroups << WordUtils.capitalize(grp[0]) //take first element - alternative is to potentially put same entry into multiple groups
+                    } else {
+                        pageGroups << WordUtils.capitalize(grp)
+                    }
+                } else {
+                    areOthers = true
+                }
+            }
+        }
+        pageGroups = pageGroups.sort().unique()
+        if (areOthers) pageGroups = pageGroups.plus('Ungrouped') //TODO i18n
     }
 
     def occurrences(){

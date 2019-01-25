@@ -175,9 +175,10 @@
 <!-- description template -->
 <div id="descriptionTemplate" class="panel panel-default panel-description" style="display:none;">
     <div class="panel-heading">
-        <h3 class="panel-title title"></h3>
+        <a href="#" class="showHidePageGroup" data-name="0"><span class="caret right-caret"></span></a>
+        <h3 class="panel-title title" style="display:inline"></h3>
     </div>
-
+    <div class="facetsGroup" id="group_0" style="display:none">
     <div class="panel-body">
         <p class="content"></p>
     </div>
@@ -188,6 +189,7 @@
         <p class="rights">Rights holder: <span class="rightsText"></span></p>
 
         <p class="provider">Provided by: <a href="#" class="providedBy"></a></p>
+    </div>
     </div>
 </div>
 
@@ -379,6 +381,7 @@
     var SHOW_CONF = {
         biocacheUrl:        "${grailsApplication.config.biocache.baseURL}",
         biocacheServiceUrl: "${grailsApplication.config.biocacheService.baseURL}",
+        biocacheQueryContext: "${grailsApplication.config.biocacheService?.queryContext?:""}",
         layersServiceUrl:   "${grailsApplication.config.layersService.baseURL}",
         collectoryUrl:      "${grailsApplication.config.collectory.baseURL}",
         profileServiceUrl:  "${grailsApplication.config.profileService.baseURL}",
@@ -422,6 +425,7 @@
         speciesTagIfInListHTML: "${grailsApplication.config.search?.tagIfInListHTML?:''}",
         speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
         speciesListLinks: "${grailsApplication.config.species?.listLinks?.json?:''}",
+        nbnRegion: "${grailsApplication.config.nbn?.region?:"n/a"}",
 
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"

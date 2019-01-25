@@ -38,8 +38,10 @@
             biocacheQueryContext: "${grailsApplication.config?.biocacheService.queryContext ?: ''}",
             geocodeLookupQuerySuffix: "${grailsApplication.config.geocode.querySuffix}",
             maxSpecies: ${grailsApplication.config?.search?.speciesLimit ?: 100},
-            isNBNinns: "${grailsApplication.config?.nbn?.inns ?: ''}",
-            recordsFilter: "${recordsFilter}"
+            isNBNinns: ${(grailsApplication.config?.nbn?.inns ?: 'false').toBoolean()},
+            recordsFilter: "${recordsFilter}",
+            isCompactLayout: ${compactResults},
+            isNBNni: ${(grailsApplication.config?.nbn?.region ?: '') == 'Northern Ireland'}
         }
     </asset:script>
     <g:if test="${grailsApplication.config.search?.mapResults == 'true'}">
@@ -64,6 +66,12 @@
                         By accessing records via the web service users accept that any <a title="data license" href="https://docs.nbnatlas.org/data-licenses/">CC-BY-NC</a> licenced records must not be used for commercial purposes without the permission of the data provider and all data providers must be acknowledged as required.
                     </small>
                 </g:if>
+                <g:elseif test="${(grailsApplication.config?.nbn?.region?:"") == 'Northern Ireland' && compactResults}">
+                    <h1>NI Priority species</h1>
+                    <p>Priority species require conservation action because of their decline, rarity and importance in an all-Ireland and UK context. During the preparation of the Northern Ireland Biodiversity Strategy (2002) an initial list of 271 Northern Ireland Priority Species requiring conservation action was identified. A more comprehensive list of Northern Ireland Priority Species was later published in March 2004.</p>
+                    <p>In 2007 the Northern Ireland Priority Species was reviewed to include UK priority species occurring in Northern Ireland as well as threatened Irish species and species requiring conservation action. The new Northern Ireland Priority Species list stands at 481 species, an increase from 271 on the original list. There is currently a further review of this Northern Ireland Priority Species list planned for completion 2019.</p>
+                    <p>Further information can be found <a href="http://www.habitas.org.uk/priority/intro.html">here</a>.</p>
+                </g:elseif>
                 <g:else>
                     <h1>
                         Search for <strong>${searchResults.queryTitle == "*:*" ? 'everything' : searchResults.queryTitle}</strong>
@@ -78,6 +86,9 @@
                     <g:if test="${grailsApplication.config?.nbn?.inns == 'true' }">
                         <h4>Useful links</h4>
                     </g:if>
+                    <g:elseif test="${grailsApplication.config?.nbn?.region?: "" == 'Northern Ireland' && compactLayout}">
+                        <!-- nothing here -->
+                    </g:elseif>
                     <g:else>
                         <h4>Related Searches</h4>
                     </g:else>
@@ -196,102 +207,131 @@
     <div class="main-content panel panel-body">
         <g:if test="${searchResults.totalRecords}">
             <g:set var="paramsValues" value="${[:]}"/>
-            <div class="row">
-                <div class="col-sm-3">
-                    <div class="well refine-box">
-                        <h2 class="hidden-xs">Refine results</h2>
-                        <h2 class="visible-xs"><a href="#refine-options" data-toggle="collapse"><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span> Refine results</a>
-                        </h2>
+            <g:if test="${!(compactResultsRemoveFacets && compactResults)}">
+                <div class="row">
+                    <div class="col-sm-3">
 
-                        <div id="refine-options" class="collapse mobile-collapse">
-            <g:if test="${query && filterQuery}">
-                <g:set var="queryParam">q=${query.encodeAsHTML()}<g:if
-                        test="${!filterQuery.isEmpty()}">&fq=${filterQuery?.join("&fq=")}</g:if></g:set>
-            </g:if>
-            <g:else>
-                <g:set var="queryParam">q=${query.encodeAsHTML()}<g:if
-                        test="${params.fq}">&fq=${fqList?.join("&fq=")}</g:if></g:set>
-            </g:else>
-            <g:if test="${facetMap}">
-                <div class="current-filters" id="currentFilters">
-                    <h3>Current filters</h3>
-                    <ul class="list-unstyled">
-                        <g:each var="item" in="${facetMap}" status="facetIdx">
-                            <li>
-                                <g:if test="${item.key?.contains("uid")}">
-                                    <g:set var="resourceType">${item.value}_resourceType</g:set>
-                                    ${collectionsMap?.get(resourceType)}: <strong>&nbsp;${collectionsMap?.get(item.value)}</strong>
-                                </g:if>
-                                <g:else>
-                                    <g:message code="facet.${item.key}" default="${item.key}"/>: <strong><g:message
-                                        code="${item.key}.${item.value}" default="${item.value}"/></strong>
-                                </g:else>
-                                <a href="#" onClick="javascript:removeFacet(${facetIdx});
-                                return true;" title="remove filter"><span
-                                        class="glyphicon glyphicon-remove-sign"></span></a>
-                            </li>
-                        </g:each>
-                    </ul>
-                </div>
-            </g:if>
+                        <div class="well refine-box">
+                            <h2 class="hidden-xs">Refine results</h2>
+                            <h2 class="visible-xs"><a href="#refine-options" data-toggle="collapse"><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span> Refine results</a>
+                            </h2>
 
-
-            <!-- facets -->
-            <g:each var="facetResult" in="${searchResults.facetResults}">
-                <g:if test="${!facetMap?.get(facetResult.fieldName) && !filterQuery?.contains(facetResult.fieldResult?.opt(0)?.label) && !facetResult.fieldName?.contains('idxtype1') && facetResult.fieldResult.length() > 0}">
-
-                    <div class="refine-list" id="facet-${facetResult.fieldName}">
-                        <h3><g:message code="facet.${facetResult.fieldName}" default="${facetResult.fieldName}"/></h3>
-                    <ul class="list-unstyled">
-                        <g:set var="lastElement"
-                               value="${facetResult.fieldResult?.get(facetResult.fieldResult.length() - 1)}"/>
-                        <g:if test="${lastElement.label == 'before'}">
-                            <li><g:set var="firstYear"
-                                       value="${facetResult.fieldResult?.opt(0)?.label.substring(0, 4)}"/>
-                                <a href="?${queryParam}${appendQueryParam}&fq=${facetResult.fieldName}:[* TO ${facetResult.fieldResult.opt(0)?.label}]">Before ${firstYear}</a>
-                                (<g:formatNumber number="${lastElement.count}" type="number"/>)
-                            </li>
-                        </g:if>
-                        <g:each var="fieldResult" in="${facetResult.fieldResult}" status="vs">
-                            <g:if test="${vs == 5}">
-                                </ul>
-                                <ul class="collapse list-unstyled">
-                            </g:if>
-                            <g:set var="dateRangeTo"><g:if
-                                    test="${vs == lastElement}">*</g:if><g:else>${facetResult.fieldResult[vs + 1]?.label}</g:else></g:set>
-                            <g:if test="${facetResult.fieldName?.contains("occurrence_date") && fieldResult.label?.endsWith("Z")}">
-                                <li><g:set var="startYear" value="${fieldResult.label?.substring(0, 4)}"/>
-                                    <a href="?${queryParam}${appendQueryParam}&fq=${facetResult.fieldName}:[${fieldResult.label} TO ${dateRangeTo}]">${startYear} - ${startYear + 10}</a>
-                                    (<g:formatNumber number="${fieldResult.count}" type="number"/>)</li>
-                            </g:if>
-                            <g:elseif test="${fieldResult.label?.endsWith("before")}"><%-- skip --%></g:elseif>
-                            <g:elseif test="${fieldResult.label?.isEmpty()}">
-                            </g:elseif>
-                            <g:elseif test="${fieldResult.count == (searchResults?.totalRecords ?: 0) && (grailsApplication.config.search?.hideFacetsThatDoNotFilterFurther == 'true')}">
-                            </g:elseif>
-                            <g:else>
-                                <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
-                                    <g:message code="${facetResult.fieldName}.${fieldResult.label}"
-                                               default="${fieldResult.label ?: "[unknown]"}"/>
-                                </a>
-                                    (<g:formatNumber number="${fieldResult.count}" type="number"/>)
+                            <div id="refine-options" class="collapse mobile-collapse">
+                <g:if test="${query && filterQuery}">
+                    <g:set var="queryParam">q=${query.encodeAsHTML()}<g:if
+                            test="${!filterQuery.isEmpty()}">&fq=${filterQuery?.join("&fq=")}</g:if></g:set>
+                </g:if>
+                <g:else>
+                    <g:set var="queryParam">q=${query.encodeAsHTML()}<g:if
+                            test="${params.fq}">&fq=${fqList?.join("&fq=")}</g:if></g:set>
+                </g:else>
+                <g:if test="${facetMap}">
+                    <div class="current-filters" id="currentFilters">
+                        <h3>Current filters</h3>
+                        <ul class="list-unstyled">
+                            <g:each var="item" in="${facetMap}" status="facetIdx">
+                                <li>
+                                    <g:if test="${item.key?.contains("uid")}">
+                                        <g:set var="resourceType">${item.value}_resourceType</g:set>
+                                        ${collectionsMap?.get(resourceType)}: <strong>&nbsp;${collectionsMap?.get(item.value)}</strong>
+                                    </g:if>
+                                    <g:else>
+                                        <g:message code="facet.${item.key}" default="${item.key}"/>: <strong><g:message
+                                            code="${item.key}.${item.value}" default="${item.value}"/></strong>
+                                    </g:else>
+                                    <a href="#" onClick="javascript:removeFacet(${facetIdx});
+                                    return true;" title="remove filter"><span
+                                            class="glyphicon glyphicon-remove-sign"></span></a>
                                 </li>
-                            </g:else>
-                        </g:each>
-                    </ul>
-                        <g:if test="${facetResult.fieldResult.size() > 5}">
-                            <a class="expand-options" href="javascript:void(0)">
-                                More
-                            </a>
-                        </g:if>
+                            </g:each>
+                        </ul>
                     </div>
                 </g:if>
-            </g:each>
-            </div><!-- refine-options -->
-        </div><!-- refine-box -->
-    </div>
 
-    <div class="col-sm-9">
+
+                <!-- facets -->
+
+                <g:each var="facetResult" in="${searchResults.facetResults}">
+                    <g:if test="${!facetMap?.get(facetResult.fieldName) && !filterQuery?.contains(facetResult.fieldResult?.opt(0)?.label) && !facetResult.fieldName?.contains('idxtype1') && facetResult.fieldResult.length() > 0}">
+
+                        <div class="refine-list" id="facet-${facetResult.fieldName}">
+                            <h3><g:message code="facet.${facetResult.fieldName}"
+                                           default="${facetResult.fieldName}"/></h3>
+                        <ul class="list-unstyled">
+                            <g:set var="lastElement"
+                                   value="${facetResult.fieldResult?.get(facetResult.fieldResult.length() - 1)}"/>
+                            <g:if test="${lastElement.label == 'before'}">
+                                <li><g:set var="firstYear"
+                                           value="${facetResult.fieldResult?.opt(0)?.label.substring(0, 4)}"/>
+                                    <a href="?${queryParam}${appendQueryParam}&fq=${facetResult.fieldName}:[* TO ${facetResult.fieldResult.opt(0)?.label}]">Before ${firstYear}</a>
+                                    (<g:formatNumber number="${lastElement.count}" type="number"/>)
+                                </li>
+                            </g:if>
+                            <g:set var="hiddenValues">0</g:set>
+                            <g:each var="fieldResult" in="${facetResult.fieldResult}" status="vs">
+
+                                <g:set var="hideThisValue">false</g:set>
+                                <g:each var="facetPrune" in="${facetsOnlyShowValues}">
+
+                                    <g:if test="${facetResult.fieldName == facetPrune.facet}">
+
+                                        <g:if test="${facetPrune.values.contains(fieldResult.fieldValue) == false }">
+                                            <g:set var="hideThisValue">true</g:set>
+                                            <g:set var="hiddenValues">${hiddenValues.toInteger()+1}</g:set>
+                                        </g:if>
+                                    </g:if>
+                                </g:each>
+
+                                <g:if test="${(vs-hiddenValues.toInteger()) == 5}">
+                                    </ul>
+                                    <ul class="collapse list-unstyled">
+                                </g:if>
+                                <g:if test="${hideThisValue == 'false'}">
+                                <g:set var="dateRangeTo"><g:if
+                                        test="${vs == lastElement}">*</g:if><g:else>${facetResult.fieldResult[vs + 1]?.label}</g:else></g:set>
+                                <g:if test="${facetResult.fieldName?.contains("occurrence_date") && fieldResult.label?.endsWith("Z")}">
+                                    <li><g:set var="startYear" value="${fieldResult.label?.substring(0, 4)}"/>
+                                        <a href="?${queryParam}${appendQueryParam}&fq=${facetResult.fieldName}:[${fieldResult.label} TO ${dateRangeTo}]">${startYear} - ${startYear + 10}</a>
+                                        (<g:formatNumber number="${fieldResult.count}" type="number"/>)</li>
+                                </g:if>
+                                <g:elseif test="${fieldResult.label?.endsWith("before")}"><%-- skip --%></g:elseif>
+                                <g:elseif test="${fieldResult.label?.isEmpty()}">
+                                </g:elseif>
+                                <g:elseif
+                                        test="${fieldResult.count == (searchResults?.totalRecords ?: 0) && (grailsApplication.config.search?.hideFacetsThatDoNotFilterFurther == 'true')}">
+                                </g:elseif>
+                                <g:else>
+                                    <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
+                                        <g:message code="${facetResult.fieldName}.${fieldResult.label}"
+                                                   default="${fieldResult.label ?: "[unknown]"}"/>
+                                    </a>
+                                        (<g:formatNumber number="${fieldResult.count}" type="number"/>)
+                                    </li>
+                                </g:else>
+                                </g:if>
+                            </g:each>
+                        </ul>
+                            <g:if test="${facetResult.fieldResult.size()-hiddenValues.toInteger() > 5}">
+                                <a class="expand-options" href="javascript:void(0)">
+                                    More
+                                </a>
+                            </g:if>
+                        </div>
+                    </g:if>
+                </g:each>
+                </div><!-- refine-options -->
+
+            </div><!-- refine-box -->
+        </div>
+            </g:if>
+
+            <g:if test="${compactResultsRemoveFacets && compactResults}">
+                <div class="col-sm-12">
+            </g:if>
+            <g:else>
+                <div class="col-sm-9">
+            </g:else>
+
         <g:if test="${idxTypes.contains("TAXON") || (grailsApplication.config.nbn?.alwaysshowdownloadbutton?:'') == 'true'}">
             <div class="download-button pull-right">
                 <g:set var="downloadUrl"
@@ -313,10 +353,9 @@
                 <div id="tabs-1" class="tab-content">
                     <g:include controller="tabcomponent" action="results"/>
         </g:if>
-
-                    <div class="result-options">
+                    <g:if test="${!compactResults}">
+                      <div class="result-options">
                         <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> <g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">taxa</g:if><g:else>results</g:else></span>
-
 
 
                         <form class="form-inline">
@@ -349,164 +388,219 @@
                                     <option value="desc" ${(params.dir == 'desc' || (!params.dir && grailsApplication.config?.search?.defaultSortOrder == 'desc') || (!params.dir && !grailsApplication.config?.search?.defaultSortOrder)) ? "selected=\"selected\"" : ""}>descending</option>
                                 </select>
                             </div>
+
                         </form>
 
-                    </div><!-- result-options -->
+
+                        </div><!-- result-options -->
+                    </g:if>
 
                     <input type="hidden" value="${pageTitle}" name="title"/>
+
+                    <g:if test="${compactResults}">
+                        <g:each var="pageGroup" in="${pageGroups}" status="i">
+                            <div class="facetGroupName" id="heading_${i}">
+                                <a href="#" class="showHidePageGroup" data-name="${i}">
+                                    <span class="caret right-caret"></span>&nbsp;${pageGroup}
+                                </a>
+                            </div>
+                            <div class="facetsGroup" id="group_${i}" style="display:none;">
+                                <ol id="search-results-list" class="search-results-list list-unstyled search-results-list-compact">
+                                <g:each var="result" in="${searchResults.results}">
+                                    <g:set var="grp"><g:if test="${(result[pageGroupBy]?:"") instanceof Collection}">${result[pageGroupBy][0]?:""}</g:if><g:else>${result[pageGroupBy]?:""}</g:else></g:set>
+
+                                    <g:if test="${grp.toLowerCase() == pageGroup.toLowerCase() || (grp == "" && pageGroup == 'Ungrouped')}">
+                                        <li class="search-result search-result-compact clearfix">
+                                        <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON' || true}">
+                                            <g:set var="taxonPageLink">${request.contextPath}/species/${result.guid ?: result.linkIdentifier}</g:set>
+                                            <g:set var="acceptedPageLink">${request.contextPath}/species/${result.acceptedConceptID ?: result.guid ?: result.linkIdentifier}</g:set>
+
+                                            <h3>${result.rank}:
+                                                <a href="${acceptedPageLink}"><bie:formatSciName rankId="${result.rankID}"
+                                                                                             taxonomicStatus="${result.taxonomicStatus}"
+                                                                                             nameFormatted="${result.nameFormatted}"
+                                                                                             nameComplete="${result.nameComplete}"
+                                                                                             name="${result.name}"
+                                                                                             acceptedName="${result.acceptedConceptName}"/></a>
+                                                <g:if test="${result.commonNameSingle}">
+                                                    <span class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span>
+                                                </g:if>
+                                            </h3>
+                                        </g:if>
+                                        </li>
+                                    </g:if>
+                                </g:each>
+                                </ol>
+                            </div>
+                        </g:each>
+                    </g:if>
+                    <g:else>
                     <ol id="search-results-list" class="search-results-list list-unstyled">
 
                         <g:each var="result" in="${searchResults.results}">
-                            <li class="search-result clearfix">
 
-                                <g:set var="sectionText"><g:if test="${!facetMap.idxtype}"><span><b>Section:</b> <g:message
-                                        code="idxType.${result.idxType}"/></span></g:if></g:set>
-                                <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON'}">
-                                    <g:set var="taxonPageLink">${request.contextPath}/species/${result.guid ?: result.linkIdentifier}</g:set>
-                                    <g:set var="acceptedPageLink">${request.contextPath}/species/${result.acceptedConceptID ?: result.guid ?: result.linkIdentifier}</g:set>
-                                    <g:if test="${result.image}">
-                                        <div class="result-thumbnail">
-                                            <a href="${acceptedPageLink}">
-                                                <img src="${grailsApplication.config.image.thumbnailUrl}${result.image}" alt="">
-                                            </a>
-                                        </div>
+                                <li class="search-result clearfix">
+
+                                    <g:set var="sectionText"><g:if
+                                            test="${!facetMap.idxtype}"><span><b>Section:</b> <g:message
+                                                code="idxType.${result.idxType}"/></span></g:if></g:set>
+                                    <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON'}">
+                                        <g:set var="taxonPageLink">${request.contextPath}/species/${result.guid ?: result.linkIdentifier}</g:set>
+                                        <g:set var="acceptedPageLink">${request.contextPath}/species/${result.acceptedConceptID ?: result.guid ?: result.linkIdentifier}</g:set>
+                                        <g:if test="${result.image}">
+                                            <div class="result-thumbnail">
+                                                <a href="${acceptedPageLink}">
+                                                    <img src="${grailsApplication.config.image.thumbnailUrl}${result.image}"
+                                                         alt="">
+                                                </a>
+                                            </div>
+                                        </g:if>
+
+                                        <h3>${result.rank}:
+                                            <a href="${acceptedPageLink}"><bie:formatSciName rankId="${result.rankID}"
+                                                                                             taxonomicStatus="${result.taxonomicStatus}"
+                                                                                             nameFormatted="${result.nameFormatted}"
+                                                                                             nameComplete="${result.nameComplete}"
+                                                                                             name="${result.name}"
+                                                                                             acceptedName="${result.acceptedConceptName}"/></a><%--
+                                            --%><g:if test="${result.commonNameSingle}"><span
+                                                class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span></g:if>
+                                        </h3>
+
+                                        <g:if test="${result.commonName != result.commonNameSingle}"><p
+                                                class="alt-names">${result.commonName}</p></g:if>
+
+                                        <g:if test="${taxonPageLink != acceptedPageLink}"><p
+                                                class="alt-names"></p></g:if>
+                                        <g:each var="fieldToDisplay"
+                                                in="${grailsApplication.config.additionalResultsFields.split(",")}">
+                                            <g:if test='${result."${fieldToDisplay}"}'>
+                                                <g:if test='${result."${fieldToDisplay}" instanceof Collection}'>
+                                                    <g:each var="fieldVal" in="${result."${fieldToDisplay}"}">
+                                                        <p class="summary-info"><strong><g:message
+                                                                code="${fieldToDisplay}"
+                                                                default="${fieldToDisplay}"/>:</strong>
+                                                            ${fieldVal}
+                                                        </p>
+                                                    </g:each>
+                                                </g:if>
+                                                <g:else>
+                                                    <p class="summary-info"><strong><g:message code="${fieldToDisplay}"
+                                                                                               default="${fieldToDisplay}"/>:</strong>
+                                                        ${result."${fieldToDisplay}"}
+                                                    </p>
+                                                </g:else>
+                                            </g:if>
+                                        </g:each>
                                     </g:if>
 
-                                    <h3>${result.rank}:
-                                        <a href="${acceptedPageLink}"><bie:formatSciName rankId="${result.rankID}"
-                                                                                 taxonomicStatus="${result.taxonomicStatus}"
-                                                                                 nameFormatted="${result.nameFormatted}"
-                                                                                 nameComplete="${result.nameComplete}"
-                                                                                 name="${result.name}"
-                                                                                 acceptedName="${result.acceptedConceptName}"/></a><%--
-                                            --%><g:if test="${result.commonNameSingle}"><span
-                                            class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span></g:if>
-                                    </h3>
+                                    <g:elseif test="${result.has("idxtype") && result.idxtype == 'COMMON'}">
+                                        <g:set var="speciesPageLink">${request.contextPath}/species/${result.taxonGuid ?: result.linkIdentifier}</g:set>
+                                        <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
+                                            <a href="${speciesPageLink}">${result.name}</a></h4>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("idxtype") && result.idxtype == 'IDENTIFIER'}">
+                                        <g:set var="speciesPageLink">${request.contextPath}/species/${result.taxonGuid ?: result.linkIdentifier}</g:set>
+                                        <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
+                                            <a href="${speciesPageLink}">${result.guid}</a></h4>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("idxtype") && result.idxtype == 'REGION'}">
+                                        <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
+                                            <a href="${grailsApplication.config.regions.baseURL}/feature/${result.guid}">${result.name}</a>
+                                        </h4>
 
-                                    <g:if test="${result.commonName != result.commonNameSingle}"><p
-                                            class="alt-names">${result.commonName}</p></g:if>
-                                    <g:if test="${taxonPageLink != acceptedPageLink}"><p class="alt-names"</g:if>
-                                    <g:each var="fieldToDisplay"
-                                            in="${grailsApplication.config.additionalResultsFields.split(",")}">
-                                        <g:if test='${result."${fieldToDisplay}"}'>
-                                            <g:if test='${result."${fieldToDisplay}" instanceof Collection}'>
-                                                <g:each var="fieldVal" in="${result."${fieldToDisplay}"}">
-                                                    <p class="summary-info"><strong><g:message code="${fieldToDisplay}" default="${fieldToDisplay}"/>:</strong>
-                                                    ${fieldVal}
-                                                    </p>
-                                                </g:each>
-                                            </g:if>
-                                            <g:else>
-                                                <p class="summary-info"><strong><g:message code="${fieldToDisplay}" default="${fieldToDisplay}"/>:</strong>
-                                                ${result."${fieldToDisplay}"}
-                                                </p>
-                                            </g:else>
-                                        </g:if>
-                                    </g:each>
-                                </g:if>
-                                <g:elseif test="${result.has("idxtype") && result.idxtype == 'COMMON'}">
-                                    <g:set var="speciesPageLink">${request.contextPath}/species/${result.taxonGuid ?: result.linkIdentifier}</g:set>
-                                    <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
-                                        <a href="${speciesPageLink}">${result.name}</a></h4>
-                                </g:elseif>
-                                <g:elseif test="${result.has("idxtype") && result.idxtype == 'IDENTIFIER'}">
-                                    <g:set var="speciesPageLink">${request.contextPath}/species/${result.taxonGuid ?: result.linkIdentifier}</g:set>
-                                    <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
-                                        <a href="${speciesPageLink}">${result.guid}</a></h4>
-                                </g:elseif>
-                                <g:elseif test="${result.has("idxtype") && result.idxtype == 'REGION'}">
-                                    <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
-                                        <a href="${grailsApplication.config.regions.baseURL}/feature/${result.guid}">${result.name}</a>
-                                    </h4>
-
-                                    <p>
-                                        <span>${result?.description && result?.description != result?.name ? result?.description : ""}</span>
-                                    </p>
-                                </g:elseif>
-                                <g:elseif test="${result.has("idxtype") && result.idxtype == 'LOCALITY'}">
-                                    <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
+                                        <p>
+                                            <span>${result?.description && result?.description != result?.name ? result?.description : ""}</span>
+                                        </p>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("idxtype") && result.idxtype == 'LOCALITY'}">
+                                        <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
                                         <bie:constructEYALink result="${result}">
-                                        ${result.name}
+                                            ${result.name}
                                         </bie:constructEYALink>
-                                    </h4>
+                                        </h4>
 
-                                    <p>
-                                        <span>${result?.description ?: ""}</span>
-                                    </p>
-                                </g:elseif>
-                                <g:elseif test="${result.has("idxtype") && result.idxtype == 'LAYER'}">
-                                    <h4><g:message code="idxtype.${result.idxtype}"/>:
-                                        <a href="${grailsApplication.config.spatial.baseURL}?layers=${result.guid}">${result.name}</a>
-                                    </h4>
+                                        <p>
+                                            <span>${result?.description ?: ""}</span>
+                                        </p>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("idxtype") && result.idxtype == 'LAYER'}">
+                                        <h4><g:message code="idxtype.${result.idxtype}"/>:
+                                            <a href="${grailsApplication.config.spatial.baseURL}?layers=${result.guid}">${result.name}</a>
+                                        </h4>
 
-                                    <p>
-                                        <g:if test="${result.dataProviderName}"><strong>Source: ${result.dataProviderName}</strong></g:if>
-                                    </p>
-                                </g:elseif>
-                                <g:elseif test="${result.has("name")}">
-                                    <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
-                                        <a href="${result.guid}">${result.name}</a></h4>
+                                        <p>
+                                            <g:if test="${result.dataProviderName}"><strong>Source: ${result.dataProviderName}</strong></g:if>
+                                        </p>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("name")}">
+                                        <h4><g:message code="idxtype.${result.idxtype}" default="${result.idxtype}"/>:
+                                            <a href="${result.guid}">${result.name}</a></h4>
 
-                                    <p>
-                                        <span>${result?.description ?: ""}</span>
-                                    </p>
-                                </g:elseif>
-                                <g:elseif test="${result.has("acronym") && result.get("acronym")}">
-                                    <h4><g:message code="idxtype.${result.idxtype}"/>:
-                                        <a href="${result.guid}">${result.name}</a></h4>
+                                        <p>
+                                            <span>${result?.description ?: ""}</span>
+                                        </p>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("acronym") && result.get("acronym")}">
+                                        <h4><g:message code="idxtype.${result.idxtype}"/>:
+                                            <a href="${result.guid}">${result.name}</a></h4>
 
-                                    <p>
-                                        <span>${result.acronym}</span>
-                                    </p>
-                                </g:elseif>
-                                <g:elseif test="${result.has("description") && result.get("description")}">
-                                    <h4><g:message code="idxtype.${result.idxtype}"/>:
-                                        <a href="${result.guid}">${result.name}</a></h4>
+                                        <p>
+                                            <span>${result.acronym}</span>
+                                        </p>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("description") && result.get("description")}">
+                                        <h4><g:message code="idxtype.${result.idxtype}"/>:
+                                            <a href="${result.guid}">${result.name}</a></h4>
 
-                                    <p>
-                                        <span class="searchDescription">${result.description?.trimLength(500)}</span>
-                                    </p>
-                                </g:elseif>
-                                <g:elseif test="${result.has("highlight") && result.get("highlight")}">
-                                    <h4><g:message code="idxtype.${result.idxtype}"/>:
-                                        <a href="${result.guid}">${result.name}</a></h4>
+                                        <p>
+                                            <span class="searchDescription">${result.description?.trimLength(500)}</span>
+                                        </p>
+                                    </g:elseif>
+                                    <g:elseif test="${result.has("highlight") && result.get("highlight")}">
+                                        <h4><g:message code="idxtype.${result.idxtype}"/>:
+                                            <a href="${result.guid}">${result.name}</a></h4>
 
-                                    <p>
-                                        <span>${result.highlight}</span>
-                                    </p>
-                                </g:elseif>
-                                <g:else>
-                                    <h4><g:message code="idxtype.${result.idxtype}"/> TEST: <a
-                                            href="${result.guid}">${result.name}</a></h4>
-                                </g:else>
-                                <g:if test="${result.has("highlight")}">
-                                    <p><bie:displaySearchHighlights highlight="${result.highlight}"/></p>
-                                </g:if>
-                                <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON'}">
-                                    <ul class="summary-actions list-inline">
-                                        <g:if test="${result.rankID < 7000}">
-                                            <li><g:link controller="species" action="imageSearch" params="[id: result.guid]">View images of species within this ${result.rank}</g:link></li>
-                                        </g:if>
+                                        <p>
+                                            <span>${result.highlight}</span>
+                                        </p>
+                                    </g:elseif>
+                                    <g:else>
+                                        <h4><g:message code="idxtype.${result.idxtype}"/> TEST: <a
+                                                href="${result.guid}">${result.name}</a></h4>
+                                    </g:else>
+                                    <g:if test="${result.has("highlight")}">
+                                        <p><bie:displaySearchHighlights highlight="${result.highlight}"/></p>
+                                    </g:if>
+                                    <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON'}">
+                                        <ul class="summary-actions list-inline">
+                                            <g:if test="${result.rankID < 7000}">
+                                                <li><g:link controller="species" action="imageSearch"
+                                                            params="[id: result.guid]">View images of species within this ${result.rank}</g:link></li>
+                                            </g:if>
 
-                                        <g:if test="${grailsApplication.config.sightings.guidUrl}">
-                                            <li><a href="${grailsApplication.config.sightings.guidUrl}${result.guid}">Record a sighting/share a photo</a>
-                                            </li>
-                                        </g:if>
-                                        <g:if test="${grailsApplication.config.occurrenceCounts.enabled.toBoolean() && (result?.occurrenceCount ?: 0 > 0 || grailsApplication.config?.search?.showZeroOccurrences == "true")}">
-                                            <li>
-                                                <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}&fq=${recordsFilter}">Occurrences:
-                                                <g:formatNumber number="${result.occurrenceCount ?: 0}" type="number"/></a>
-                                            </li>
-                                        </g:if>
-                                        <g:if test="${result.acceptedConceptID && result.acceptedConceptID != result.guid}">
-                                            <li><g:link controller="species" action="show"
-                                                    params="[guid: result.guid]"><g:message
-                                                    code="taxonomicStatus.${result.taxonomicStatus}"
-                                                    default="${result.taxonomicStatus}"/></g:link></li
-                                        </g:if>
-                                    </ul>
-                                </g:if>
-                            </li>
+                                            <g:if test="${grailsApplication.config.sightings.guidUrl}">
+                                                <li><a href="${grailsApplication.config.sightings.guidUrl}${result.guid}">Record a sighting/share a photo</a>
+                                                </li>
+                                            </g:if>
+                                            <g:if test="${grailsApplication.config.occurrenceCounts.enabled.toBoolean() && (result?.occurrenceCount ?: 0 > 0 || grailsApplication.config?.search?.showZeroOccurrences == "true")}">
+                                                <li>
+                                                    <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}&fq=${recordsFilter}">Occurrences:
+                                                        <g:formatNumber number="${result.occurrenceCount ?: 0}"
+                                                                        type="number"/></a>
+                                                </li>
+                                            </g:if>
+                                            <g:if test="${result.acceptedConceptID && result.acceptedConceptID != result.guid}">
+                                                <li><g:link controller="species" action="show"
+                                                            params="[guid: result.guid]"><g:message
+                                                        code="taxonomicStatus.${result.taxonomicStatus}"
+                                                        default="${result.taxonomicStatus}"/></g:link></li
+                                            </g:if>
+                                        </ul>
+                                    </g:if>
+                                </li>
+
+
                         </g:each>
                     </ol><!--close results-->
 
@@ -516,7 +610,7 @@
                              action="search"
                              params="${[q: params.q, fq: params.fq, dir: (params.dir ?: (grailsApplication.config?.search?.defaultSortOrder?:'desc')), sortField: (params.sortField ?: (grailsApplication.config?.search?.defaultSortField?:'score')), rows: (params.rows ?: (grailsApplication.config?.search?.defaultRows?:10))]}"/>
                     </div>
-
+                    </g:else>
 
             <g:if test="${grailsApplication.config?.search?.mapResults == 'true'}">
                 </div>
@@ -673,7 +767,9 @@ var MAP_CONF = {
     presenceOrAbsence:          "${(grailsApplication.config?.search?.mapPresenceAndAbsence == 'true') ? "presence" : ""}"
 };
 
+<g:if test="${!compactResults || !compactResultsRemoveFacets}">
 tagResults("${lsids}".split("%20OR%20"));
+</g:if>
 
 <g:if test="${grailsApplication.config.search?.mapResults == 'true'}">
     <g:if test="${grailsApplication.config?.search?.mapPresenceAndAbsence == 'true'}">

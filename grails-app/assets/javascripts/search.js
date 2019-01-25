@@ -42,12 +42,14 @@ $(document).ready(function() {
     });
 
     // AJAX search results
-    if (SEARCH_CONF.isNBNinns == 'true') {
+    if (SEARCH_CONF.isNBNinns) {
         injectBiocacheResultsActual(MAP_CONF.allResultsOccurrenceRecords, SEARCH_CONF.maxSpecies);
         $('#related-searches').removeClass('hide');
     } else {
-        injectBhlResults();
-        injectBiocacheResults();
+        if (!(SEARCH_CONF.isNBNni && SEARCH_CONF.isCompactLayout)) {
+            injectBhlResults();
+            injectBiocacheResults();
+        }
     }
 
     // in mobile view toggle display of facets
@@ -248,7 +250,6 @@ function insertSearchLinks(html) {
     });
     $('#related-searches').removeClass('hide');
 }
-
 
 //= require leaflet.js
 

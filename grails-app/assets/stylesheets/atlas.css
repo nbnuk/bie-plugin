@@ -278,3 +278,35 @@ html, body {height:100%;}
     -o-transition: left 0.15s ease-out;
     transition: left 0.15s ease-out;
 }
+
+.right-caret, .facetGroupName .right-caret {
+    border-bottom: 4px solid transparent;
+    border-top: 4px solid transparent;
+    border-left: 4px solid #000000;
+    display: inline-block;
+    height: 0;
+    /*opacity: 0.3;*/
+    vertical-align: top;
+    margin-top: 10px;
+    width: 0;
+}
+
+.facetGroupName > .showHideFacetGroup, .facetGroupName > .showHideFacetGroup:hover {
+    text-decoration: none;
+}
+
+.search-result.search-result-compact { width: 100%; padding-top: 4px; padding-bottom: 4px; border-top: none; margin-left:14px}
+.search-result.search-result-compact h3 { margin-bottom: 0px }
+.search-results-list.search-results-list-compact {border-bottom: none; margin-bottom: 8px}
+
+.showHidePageGroup {
+    font-size: 20px;
+    line-height: 24px;
+    margin: 14px 0 4px 0;
+    color: inherit; /*#595d5f;*/
+}
+
+.taxon-listlink-custom {
+    font-weight: bold;
+    font-size: 20px;
+}
