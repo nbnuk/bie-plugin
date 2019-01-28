@@ -165,7 +165,8 @@ function loadDataProviders(){
        url = url + '&fq=' + mapContextUnencoded;
     }
     if (SHOW_CONF.biocacheQueryContext) {
-        url += "&fq=" + encodeURIComponent(SHOW_CONF.biocacheQueryContext);
+        var bqc_clean = $('<textarea />').html(SHOW_CONF.biocacheQueryContext).text();
+        url += "&fq=" + encodeURI(bqc_clean);
     }
 
     url = url + '&facet=on&facets=data_resource_uid&callback=?';
@@ -215,6 +216,8 @@ function loadDataProviders(){
                     });
                 }
             });
+        } else {
+            $('.datasetLabel').html("No datasets have");
         }
     });
 }
