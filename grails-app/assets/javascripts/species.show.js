@@ -80,7 +80,7 @@ function loadSpeciesLists(){
             }
 
             if (specieslist.list.isBIE) {
-                var $description = $('#descriptionTemplate').clone();
+                var $description = $('#descriptionCollapsibleTemplate').clone();
                 $description.css({'display': 'block'});
                 $description.attr('id', '#specieslist-block-' + specieslist.dataResourceUid);
                 $description.addClass('species-list-block');
@@ -296,9 +296,9 @@ function loadExternalSources(){
     $.ajax({url: SHOW_CONF.eolUrl}).done(function ( data ) {
         //console.log(data);
         //clone a description template...
-        if(data.dataObjects){
-            //console.log('Loading EOL content - ' + data.dataObjects.length);
-            $.each(data.dataObjects, function(idx, dataObject){
+        if(data.taxonConcept && data.taxonConcept.dataObjects){
+            //console.log('Loading EOL content - ' + data.taxonConcept.dataObjects.length);
+            $.each(data.taxonConcept.dataObjects, function(idx, dataObject){
                 //console.log('Loading EOL content -> ' + dataObject.description);
                 if(dataObject.language == SHOW_CONF.eolLanguage || !dataObject.language){
                     var $description = $('#descriptionTemplate').clone();

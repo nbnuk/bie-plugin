@@ -175,10 +175,9 @@
 <!-- description template -->
 <div id="descriptionTemplate" class="panel panel-default panel-description" style="display:none;">
     <div class="panel-heading">
-        <a href="#" class="showHidePageGroup" data-name="0"><span class="caret right-caret"></span></a>
-        <h3 class="panel-title title" style="display:inline"></h3>
+        <h3 class="panel-title title"></h3>
     </div>
-    <div class="facetsGroup" id="group_0" style="display:none">
+
     <div class="panel-body">
         <p class="content"></p>
     </div>
@@ -190,6 +189,25 @@
 
         <p class="provider">Provided by: <a href="#" class="providedBy"></a></p>
     </div>
+</div>
+
+<div id="descriptionCollapsibleTemplate" class="panel panel-default panel-description" style="display:none;">
+    <div class="panel-heading">
+        <a href="#" class="showHidePageGroup" data-name="0"><span class="caret right-caret"></span></a>
+        <h3 class="panel-title title" style="display:inline"></h3>
+    </div>
+    <div class="facetsGroup" id="group_0" style="display:none">
+        <div class="panel-body">
+            <p class="content"></p>
+        </div>
+
+        <div class="panel-footer">
+            <p class="source">Source: <span class="sourceText"></span></p>
+
+            <p class="rights">Rights holder: <span class="rightsText"></span></p>
+
+            <p class="provider">Provided by: <a href="#" class="providedBy"></a></p>
+        </div>
     </div>
 </div>
 

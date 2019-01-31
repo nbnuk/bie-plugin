@@ -1,51 +1,73 @@
+/*
+ * Copyright (C) 2018 Atlas of Living Australia
+ * All Rights Reserved.
+ * The contents of this file are subject to the Mozilla Public
+ * License Version 1.1 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of
+ * the License at http://www.mozilla.org/MPL/
+ * Software distributed under the License is distributed on an "AS
+ * IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * rights and limitations under the License.
+ */
+
 package au.org.ala.bie
 
+import com.google.common.util.concurrent.RateLimiter
 import grails.converters.JSON
 import groovy.json.JsonSlurper
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 
+import java.text.MessageFormat
+
 /**
  * Controller that proxies external webservice calls to get around cross domain issues
  * and to make consumption of services easier from javascript.
  */
 class ExternalSiteController {
+    RateLimiter eolRateLimiter = RateLimiter.create(1.0) // rate max requests per second (Double)
+    RateLimiter genbankRateLimiter = RateLimiter.create(3.0) // rate max requests per second (Double)
+
     def index() {}
 
     def eol = {
-        def searchString = params.s
-        def filterString  = java.net.URLEncoder.encode(params.f?:"", "UTF-8")
-        def nameEncoded = java.net.URLEncoder.encode(searchString, "UTF-8")
-        def searchURL = "http://eol.org/api/search/1.0.json?q=${nameEncoded}&page=1&exact=true&filter_by_taxon_concept_id=&filter_by_hierarchy_entry_id=&filter_by_string=${filterString}&cache_ttl="
-        log.debug "Initial EOL url = ${searchURL}"
+        eolRateLimiter.acquire()
+        String jsonOutput = "{}" // default is empty JSON object
+        def nameEncoded = URLEncoder.encode(params.s, 'UTF-8')
+        def filterString  = URLEncoder.encode(params.f ?: '', 'UTF-8')
+        String search = grailsApplication.config.external.eol.search.service
+        log.info("EOL search = " + search)
+        search =  MessageFormat.format(search, nameEncoded, filterString)
+        log.info "Initial EOL url = ${search}"
         def js = new JsonSlurper()
-        def jsonText = new java.net.URL(searchURL).text
-
-        def json = js.parseText(jsonText)
+        def jsonText = new URL(search).text
+        def json = js.parseText(jsonText ?: '{}')
 
         //get first pageId
-        if(json.results){
+        if (json.results) {
             def pageId = json.results[0].id
-            def pageUrl = "http://eol.org/api/pages/1.0/${pageId}.json?images=00&videos=0&sounds=0&maps=0&text=2&iucn=false&subjects=overview&licenses=all&details=true&references=true&vetted=0&cache_ttl="
-            log.debug(pageUrl)
-            def pageText = new java.net.URL(pageUrl).text
-            response.setContentType("application/json")
-            render pageText
-        } else {
-            response.setContentType("application/json")
-            render ([:] as JSON)
+            String page = grailsApplication.config.external.eol.page.service
+            page = MessageFormat.format(page, pageId)
+            log.info("EOL page url = ${page}")
+            def pageText = new URL(page).text ?: '{}'
+            jsonOutput =  pageText
         }
+        log.info("EOL final json = " + jsonOutput)
+
+        response.setContentType("application/json")
+        render jsonOutput
     }
 
     def genbank = {
-
+        genbankRateLimiter.acquire()
         def searchStrings = params.list("s")
         def searchParams = URLEncoder.encode("\"" + searchStrings.join("\" OR \"") + "\"", "UTF-8")
         def genbankBase = grailsApplication.config.literature?.genbank?.url ?: "https://www.ncbi.nlm.nih.gov"
         def url = (genbankBase + "/nuccore/?term=" + searchParams)
-
-        Document doc = Jsoup.connect(url).get()
+        log.debug "genbank URL = ${url}"
+        Document doc = Jsoup.connect(url).timeout(10*1000).get()
         Elements results = doc.select("div.rslt")
 
         def totalResultsRaw = doc.select("h2.result_count").text()
@@ -74,7 +96,7 @@ class ExternalSiteController {
         def searchParams = "\"" + searchStrings.join("\" OR \"") + "\""
         def scholarBase = grailsApplication.config.literature?.scholar?.url ?: "https://scholar.google.com"
         def url = scholarBase + "/scholar?q=" + URLEncoder.encode(searchParams, "UTF-8")
-        def doc = Jsoup.connect(url).userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6").referrer("http://www.google.com").get()
+        def doc = Jsoup.connect(url).userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6").referrer("http://www.google.com").timeout(10*1000).get()
         def totalResultsRaw = doc.select("div[id=gs_ab_md]").get(0).text()
         def matcher = totalResultsRaw =~ "About ([0-9\\,]{1,}) results \\([0-9\\.]{1,} sec\\)"
         def found = matcher.find()
@@ -99,5 +121,37 @@ class ExternalSiteController {
         }
         response.setContentType("application/json")
         render ([total:totalResults, resultsUrl:url, results:formattedResults] as JSON)
+    }
+
+    /**
+     * Proxy autocomplete requests to bie-index
+     *
+     */
+    def proxyAutocomplete = {
+        URL url = ( "${grailsApplication.config.getProperty("bie.index.url")}/search/auto.json" + params.toQueryString() ).toURL()
+        StringBuilder content = new StringBuilder()
+        BufferedReader bufferedReader
+
+        try {
+            HttpURLConnection connection = url.openConnection()
+            connection.setRequestMethod("GET")
+            connection.connect()
+            bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()))
+            String line
+            // read from the connection via the bufferedreader
+            while ((line = bufferedReader.readLine()) != null) {
+                content.append(line + "\n")
+            }
+            response.setContentType(connection.getContentType())
+            response.status = connection.getResponseCode()
+            render content.toString() //render url.getText()
+        } catch (Exception e) {
+            // will bubble up to Grails and trigger an error page
+            log.error "${e.message}", e
+        } finally {
+            if (bufferedReader) {
+                bufferedReader.close() // can throw exception but passing on to Grails error handling
+            }
+        }
     }
 }
