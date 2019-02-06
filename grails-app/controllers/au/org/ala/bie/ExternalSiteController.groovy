@@ -15,6 +15,7 @@ package au.org.ala.bie
 
 import com.google.common.util.concurrent.RateLimiter
 import grails.converters.JSON
+import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -52,9 +53,27 @@ class ExternalSiteController {
             page = MessageFormat.format(page, pageId)
             log.info("EOL page url = ${page}")
             def pageText = new URL(page).text ?: '{}'
-            jsonOutput =  pageText
+
+            def wikipediaContent = js.parseText(pageText)
+
+            if (wikipediaContent?.taxonConcept?.dataObjects) {
+                def articles = wikipediaContent.taxonConcept.dataObjects.findAll {
+                    if (it.source) {
+                        it?.source.startsWith("http://en.wikipedia.org/")
+                    }
+                }
+                //log.info(articles.toString())
+                wikipediaContent.taxonConcept.dataObjects = articles
+            }
+            if (wikipediaContent?.taxonConcept?.dataObjects.size()) {
+                jsonOutput = JsonOutput.toJson(wikipediaContent)
+                //jsonOutput = wikipediaContent
+                log.info("Using Wikipedia content fron EOL")
+            } else {
+                jsonOutput = pageText
+            }
         }
-        log.info("EOL final json = " + jsonOutput)
+        //log.info("EOL final json = " + jsonOutput)
 
         response.setContentType("application/json")
         render jsonOutput
