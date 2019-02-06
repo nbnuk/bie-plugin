@@ -193,8 +193,8 @@
 
 <div id="descriptionCollapsibleTemplate" class="panel panel-default panel-description" style="display:none;">
     <div class="panel-heading">
-        <a href="#" class="showHidePageGroup" data-name="0"><span class="caret right-caret"></span></a>
-        <h3 class="panel-title title" style="display:inline"></h3>
+        <a href="#" class="showHidePageGroup" data-name="0" style="text-decoration: none"><span class="caret right-caret"></span>
+        <h3 class="panel-title title" style="display:inline"></h3></a>
     </div>
     <div class="facetsGroup" id="group_0" style="display:none">
         <div class="panel-body">

@@ -46,8 +46,11 @@ function loadSpeciesLists(){
 
     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
         if (!data) return;
+        var listsDone = [];
         for(var i = 0; i < data.length; i++) {
             var specieslist = data[i];
+
+
             var maxListFields = 10;
 
             if (SHOW_CONF.speciesListLinks > "") {
@@ -80,6 +83,12 @@ function loadSpeciesLists(){
             }
 
             if (specieslist.list.isBIE) {
+                if (listsDone.indexOf(specieslist.dataResourceUid.toString()) != -1) {
+                    continue;
+                }
+                listsDone.push(specieslist.dataResourceUid);
+                console.log(listsDone);
+
                 var $description = $('#descriptionCollapsibleTemplate').clone();
                 $description.css({'display': 'block'});
                 $description.attr('id', '#specieslist-block-' + specieslist.dataResourceUid);
