@@ -17,6 +17,7 @@ import com.google.common.util.concurrent.RateLimiter
 import grails.converters.JSON
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import org.apache.commons.lang.StringUtils
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
@@ -63,12 +64,51 @@ class ExternalSiteController {
                     }
                 }
                 //log.info(articles.toString())
-                wikipediaContent.taxonConcept.dataObjects = articles
+                if (articles.size()) {
+                    def article = articles[0] //take first one at random if more than one
+                    def content = article["description"]
+                    if (content) {
+                        def finalContent = ""
+                        //see if has contents section:
+                        def startOfContents = content.toUpperCase().indexOf("<H2>CONTENTS")
+                        if (startOfContents > 0) {
+                            finalContent = content.substring(0,startOfContents-1)
+                        } else {
+                            //get first few paragraphs
+                            content = content.replace("<p></p>","") //ghost paragraphs from messy editing
+                            content = content.replace("<p> </p>","")
+                            def thirdParaEnds = StringUtils.ordinalIndexOf(content, "</p>", 3)
+                            if (thirdParaEnds > 0) {
+                                finalContent = content.substring(0,thirdParaEnds+4)
+                            } else {
+                                finalContent = content
+                            }
+                        }
+                        //try to strip out img tags
+                        while (finalContent.indexOf("<img ") > 0) {
+                            def startImg = finalContent.indexOf("<img ")
+                            if (startImg > 0) {
+                                def endImg = finalContent.indexOf(">", startImg) //ugh, this feels dodgy
+                                if (endImg > 0) {
+                                    finalContent = finalContent.substring(0,startImg) + finalContent.substring(endImg+1)
+                                }
+                            }
+                        }
+                        article["description"] = finalContent
+                    }
+                    def articleAsArray = []
+                    articleAsArray.push(article)
+                    wikipediaContent.taxonConcept.dataObjects = articleAsArray
+
+
+                } else {
+                    wikipediaContent.taxonConcept.dataObjects = []
+                }
             }
             if (wikipediaContent?.taxonConcept?.dataObjects.size()) {
                 jsonOutput = JsonOutput.toJson(wikipediaContent)
                 //jsonOutput = wikipediaContent
-                log.info("Using Wikipedia content fron EOL")
+                log.info("Using Wikipedia content from EOL")
             } else {
                 jsonOutput = pageText
             }
