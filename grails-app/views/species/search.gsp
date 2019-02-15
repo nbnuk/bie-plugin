@@ -67,7 +67,7 @@
                     </small>
                 </g:if>
                 <g:elseif test="${(grailsApplication.config?.nbn?.region?:"") == 'Northern Ireland' && compactResults}">
-                    <h1>NI Priority species</h1>
+                    <h1>NI Priority Species</h1>
                     <p>Priority species require conservation action because of their decline, rarity and importance in an all-Ireland and UK context. During the preparation of the Northern Ireland Biodiversity Strategy (2002) an initial list of 271 Northern Ireland Priority Species requiring conservation action was identified. A more comprehensive list of Northern Ireland Priority Species was later published in March 2004.</p>
                     <p>In 2007 the Northern Ireland Priority Species was reviewed to include UK priority species occurring in Northern Ireland as well as threatened Irish species and species requiring conservation action. The new Northern Ireland Priority Species list stands at 481 species, an increase from 271 on the original list. There is currently a further review of this Northern Ireland Priority Species list planned for completion 2019.</p>
                     <p>Further information can be found <a href="http://www.habitas.org.uk/priority/intro.html">here</a>.</p>
@@ -335,7 +335,7 @@
         <g:if test="${idxTypes.contains("TAXON") || (grailsApplication.config.nbn?.alwaysshowdownloadbutton?:'') == 'true'}">
             <div class="download-button pull-right">
                 <g:set var="downloadUrl"
-                       value="${grailsApplication.config.bie.index.url}/download?${request.queryString ?: ''}${((grailsApplication.config.bieService.queryContext?:'').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
+                       value="${grailsApplication.config.bie.index.url}/download?${request.queryString ?: ''}${((grailsApplication.config.bieService.queryContext?:'.').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
                 <a class="btn btn-default active btn-small" href="${downloadUrl}"
                    title="Download a list of taxa for your search">
                     <i class="glyphicon glyphicon-download"></i>
