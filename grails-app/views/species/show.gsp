@@ -439,10 +439,10 @@
 
         speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}",
         speciesAdditionalHeadlinesSpeciesList: "${grailsApplication.config.species?.additionalHeadlinesSpeciesList?:''}",
-        speciesTagIfInList: "${grailsApplication.config.search?.tagIfInList?:''}",
-        speciesTagIfInListHTML: "${grailsApplication.config.search?.tagIfInListHTML?:''}",
+        tagNNSSlist: "${grailsApplication.config.species?.tagNNSSlist?:''}",
+        tagNNSSlistHTML: "${grailsApplication.config.species?.tagNNSSlistHTML?:''}",
         speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
-        speciesListLinks: "${grailsApplication.config.species?.listLinks?.json?:''}",
+        speciesListLinks: "${grailsApplication.config.species?.listLinks?:''}",
         nbnRegion: "${grailsApplication.config.nbn?.region?:"n/a"}",
 
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",

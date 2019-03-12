@@ -41,8 +41,7 @@ function loadSpeciesLists(){
     var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split(","); //TODO: what if bad embedded HTML characters? what if key contains comma?
     var addedToHeadline = [];
     $.each(listHeadlines, function (idx, listHeadline) {addedToHeadline[idx] = false;}); //only allow first species list kvp to match a given headline and be included in the headline area
-
-    console.log(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?');
+    //console.log(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?');
 
     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
         if (!data) return;
@@ -77,7 +76,7 @@ function loadSpeciesLists(){
 
             //add header link to nonnativespecies.org entry if tagged species (INNS specific)
             if (SHOW_CONF.speciesShowNNSSlink == "true") {
-                if (SHOW_CONF.speciesTagIfInList == specieslist.dataResourceUid) {
+                if (SHOW_CONF.tagNNSSlist == specieslist.dataResourceUid) {
                     addNNSSlink(true, specieslist.list.listName);
                 }
             }
@@ -87,7 +86,6 @@ function loadSpeciesLists(){
                     continue;
                 }
                 listsDone.push(specieslist.dataResourceUid);
-                console.log(listsDone);
 
                 var $description = $('#descriptionCollapsibleTemplate').clone();
                 $description.css({'display': 'block'});
@@ -861,8 +859,8 @@ function addNNSSlink(inHeader, listName) {
         "<input type='hidden' value='" + (SHOW_CONF.scientificName).replace(/'/g, '') + "' name='query'>" +
         "</form>";
     if (inHeader) {
-        NNSSform += "<a id='NNSSform_submit_header' href='#'>" + $('<textarea/>').html(listName).text() + $('<textarea/>').html(SHOW_CONF.speciesTagIfInListHTML).text() + "</a>";
-        var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + SHOW_CONF.speciesTagIfInList + "'>" + NNSSform;
+        NNSSform += "<a id='NNSSform_submit_header' href='#'>" + $('<textarea/>').html(listName).text() + $('<textarea/>').html(SHOW_CONF.tagNNSSlistHTML).text() + "</a>";
+        var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + SHOW_CONF.tagNNSSlist + "'>" + NNSSform;
         sppListHeaderHTML += "</h5>";
         $(sppListHeaderHTML).appendTo(".header-inner");
         $("#NNSSform_submit_header").click(function() {

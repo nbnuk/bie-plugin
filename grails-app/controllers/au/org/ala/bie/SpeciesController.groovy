@@ -168,7 +168,8 @@ class SpeciesController {
                 setResultGroups(searchResults, grailsApplication.config.search?.compactResultsGroupBy)
             }
             def jsonSlurper = new JsonSlurper()
-            def facetsOnlyShowValuesJson = jsonSlurper.parseText((grailsApplication.config.facetsOnlyShowValues ?: "[]"))
+            def facetsOnlyShowValuesJson = jsonSlurper.parseText((grailsApplication.config.search?.facetsOnlyShowValues ?: "[]"))
+            def tagIfInListsJson = jsonSlurper.parseText((grailsApplication.config.search?.tagIfInLists ?: "[]"))
 
             render(view: 'search', model: [
                     searchResults: searchResults?.searchResults,
@@ -192,7 +193,8 @@ class SpeciesController {
                     pageGroups: pageGroups,
                     pageGroupBy: grailsApplication.config?.search?.compactResultsGroupBy ?: '',
                     compactResultsRemoveFacets: (grailsApplication.config?.search?.compactResultsRemoveFacets ?: 'false').toBoolean(),
-                    facetsOnlyShowValues: facetsOnlyShowValuesJson
+                    facetsOnlyShowValues: facetsOnlyShowValuesJson,
+                    tagIfInLists: tagIfInListsJson
             ])
         }
     }

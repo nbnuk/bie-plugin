@@ -67,10 +67,17 @@
                     </small>
                 </g:if>
                 <g:elseif test="${(grailsApplication.config?.nbn?.region?:"") == 'Northern Ireland' && compactResults}">
+                    <g:if test="${filterQuery.contains("listMembership_m_s:\"Northern Ireland Priority Species\"") /* TODO: refactor this into config */}">
                     <h1>NI Priority Species</h1>
                     <p>Priority species require conservation action because of their decline, rarity and importance in an all-Ireland and UK context. During the preparation of the Northern Ireland Biodiversity Strategy (2002) an initial list of 271 Northern Ireland Priority Species requiring conservation action was identified. A more comprehensive list of Northern Ireland Priority Species was later published in March 2004.</p>
                     <p>In 2007 the Northern Ireland Priority Species was reviewed to include UK priority species occurring in Northern Ireland as well as threatened Irish species and species requiring conservation action. The new Northern Ireland Priority Species list stands at 481 species, an increase from 271 on the original list. There is currently a further review of this Northern Ireland Priority Species list planned for completion 2019.</p>
                     <p>Further information can be found <a href="http://www.habitas.org.uk/priority/intro.html">here</a>.</p>
+                    </g:if>
+                    <g:elseif test="${filterQuery.contains("listMembership_m_s:\"Non-native species of interest to Northern Ireland\"")}">
+                        <h1>NI INNS portal</h1>
+                        <p>If you have seen an invasive species within Northern Ireland please submit your record to <a href="https://www2.habitas.org.uk/records/ISI">CEDaR Online Recording</a>.</p>
+                        <p>Submission of your record will send an immediate alert to a team of experts who will verify the record and take appropriate action.</p>
+                    </g:elseif>
                 </g:elseif>
                 <g:else>
                     <h1>
@@ -203,7 +210,6 @@
         </div>
     </div>
 
-
     <div class="main-content panel panel-body">
         <g:if test="${searchResults.totalRecords}">
             <g:set var="paramsValues" value="${[:]}"/>
@@ -250,7 +256,6 @@
 
 
                 <!-- facets -->
-
                 <g:each var="facetResult" in="${searchResults.facetResults}">
                     <g:if test="${!facetMap?.get(facetResult.fieldName) && !filterQuery?.contains(facetResult.fieldResult?.opt(0)?.label) && !facetResult.fieldName?.contains('idxtype1') && facetResult.fieldResult.length() > 0}">
 
@@ -729,8 +734,9 @@ var SHOW_CONF = {
     imageDialog:        '${imageViewerType}',
     addPreferenceButton: ${imageClient.checkAllowableEditRole()},
     speciesListUrl:     "${grailsApplication.config.speciesList.baseURL}",
-    resultSppListTag:   "${grailsApplication.config.search?.tagIfInList ?: ''}",
-    resultSppListTagHTML: "${grailsApplication.config.search?.tagIfInListHTML ?: ''}"
+    tagIfInList:        "${grailsApplication.config.search?.tagIfInList ?: ''}",
+    tagIfInListHTML:    "${grailsApplication.config.search?.tagIfInListHTML ?: ''}",
+    tagIfInLists:       "${grailsApplication.config.search?.tagIfInLists ?: ''}"
 };
 
 var MAP_CONF = {
