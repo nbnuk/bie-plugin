@@ -74,7 +74,7 @@
                     <p>Further information can be found <a href="http://www.habitas.org.uk/priority/intro.html">here</a>.</p>
                     </g:if>
                     <g:elseif test="${filterQuery.contains("listMembership_m_s:\"Non-native species of interest to Northern Ireland\"")}">
-                        <h1>NI INNS portal</h1>
+                        <h1>Invasive Species</h1>
                         <p>If you have seen an invasive species within Northern Ireland please submit your record to <a href="https://www2.habitas.org.uk/records/ISI">CEDaR Online Recording</a>.</p>
                         <p>Submission of your record will send an immediate alert to a team of experts who will verify the record and take appropriate action.</p>
                     </g:elseif>
@@ -254,14 +254,16 @@
                     </div>
                 </g:if>
 
-
                 <!-- facets -->
+
                 <g:each var="facetResult" in="${searchResults.facetResults}">
                     <g:if test="${!facetMap?.get(facetResult.fieldName) && !filterQuery?.contains(facetResult.fieldResult?.opt(0)?.label) && !facetResult.fieldName?.contains('idxtype1') && facetResult.fieldResult.length() > 0}">
 
                         <div class="refine-list" id="facet-${facetResult.fieldName}">
                             <h3><g:message code="facet.${facetResult.fieldName}"
                                            default="${facetResult.fieldName}"/></h3>
+
+
                         <ul class="list-unstyled">
                             <g:set var="lastElement"
                                    value="${facetResult.fieldResult?.get(facetResult.fieldResult.length() - 1)}"/>
@@ -272,47 +274,38 @@
                                     (<g:formatNumber number="${lastElement.count}" type="number"/>)
                                 </li>
                             </g:if>
-                            <g:set var="hiddenValues">0</g:set>
+
+                            <g:set var="hiddenValues" value="0"/>
                             <g:each var="fieldResult" in="${facetResult.fieldResult}" status="vs">
-
-                                <g:set var="hideThisValue">false</g:set>
-                                <g:each var="facetPrune" in="${facetsOnlyShowValues}">
-
-                                    <g:if test="${facetResult.fieldName == facetPrune.facet}">
-
-                                        <g:if test="${facetPrune.values.contains(fieldResult.fieldValue) == false }">
-                                            <g:set var="hideThisValue">true</g:set>
-                                            <g:set var="hiddenValues">${hiddenValues.toInteger()+1}</g:set>
-                                        </g:if>
+                                <g:if test="${fieldResult?.hideThisValue}">
+                                    <g:set var="hiddenValues" value="${hiddenValues.toInteger()+1}"/>
+                                </g:if>
+                                <g:if test="${!fieldResult?.hideThisValue}">
+                                    <g:if test="${(vs-hiddenValues.toInteger()) == 5 }">
+                                        </ul>
+                                        <ul class="collapse list-unstyled">
                                     </g:if>
-                                </g:each>
-
-                                <g:if test="${(vs-hiddenValues.toInteger()) == 5}">
-                                    </ul>
-                                    <ul class="collapse list-unstyled">
-                                </g:if>
-                                <g:if test="${hideThisValue == 'false'}">
-                                <g:set var="dateRangeTo"><g:if
-                                        test="${vs == lastElement}">*</g:if><g:else>${facetResult.fieldResult[vs + 1]?.label}</g:else></g:set>
-                                <g:if test="${facetResult.fieldName?.contains("occurrence_date") && fieldResult.label?.endsWith("Z")}">
-                                    <li><g:set var="startYear" value="${fieldResult.label?.substring(0, 4)}"/>
-                                        <a href="?${queryParam}${appendQueryParam}&fq=${facetResult.fieldName}:[${fieldResult.label} TO ${dateRangeTo}]">${startYear} - ${startYear + 10}</a>
-                                        (<g:formatNumber number="${fieldResult.count}" type="number"/>)</li>
-                                </g:if>
-                                <g:elseif test="${fieldResult.label?.endsWith("before")}"><%-- skip --%></g:elseif>
-                                <g:elseif test="${fieldResult.label?.isEmpty()}">
-                                </g:elseif>
-                                <g:elseif
-                                        test="${fieldResult.count == (searchResults?.totalRecords ?: 0) && (grailsApplication.config.search?.hideFacetsThatDoNotFilterFurther == 'true')}">
-                                </g:elseif>
-                                <g:else>
-                                    <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
-                                        <g:message code="${facetResult.fieldName}.${fieldResult.label}"
-                                                   default="${fieldResult.label ?: "[unknown]"}"/>
-                                    </a>
-                                        (<g:formatNumber number="${fieldResult.count}" type="number"/>)
-                                    </li>
-                                </g:else>
+                                    <g:set var="dateRangeTo"><g:if
+                                            test="${vs == lastElement}">*</g:if><g:else>${facetResult.fieldResult[vs + 1]?.label}</g:else></g:set>
+                                    <g:if test="${facetResult.fieldName?.contains("occurrence_date") && fieldResult.label?.endsWith("Z")}">
+                                        <li><g:set var="startYear" value="${fieldResult.label?.substring(0, 4)}"/>
+                                            <a href="?${queryParam}${appendQueryParam}&fq=${facetResult.fieldName}:[${fieldResult.label} TO ${dateRangeTo}]">${startYear} - ${startYear + 10}</a>
+                                            (<g:formatNumber number="${fieldResult.count}" type="number"/>)</li>
+                                    </g:if>
+                                    <g:elseif test="${fieldResult.label?.endsWith("before")}"><%-- skip --%></g:elseif>
+                                    <g:elseif test="${fieldResult.label?.isEmpty()}">
+                                    </g:elseif>
+                                    <g:elseif
+                                            test="${fieldResult.count == (searchResults?.totalRecords ?: 0) && (grailsApplication.config.search?.hideFacetsThatDoNotFilterFurther == 'true')}">
+                                    </g:elseif>
+                                    <g:else>
+                                        <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
+                                            <g:message code="${facetResult.fieldName}.${fieldResult.label}"
+                                                       default="${fieldResult.label ?: "[unknown]"}"/>
+                                        </a>
+                                            (<g:formatNumber number="${fieldResult.count}" type="number"/>)
+                                        </li>
+                                    </g:else>
                                 </g:if>
                             </g:each>
                         </ul>

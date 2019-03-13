@@ -171,6 +171,20 @@ class SpeciesController {
             def facetsOnlyShowValuesJson = jsonSlurper.parseText((grailsApplication.config.search?.facetsOnlyShowValues ?: "[]"))
             def tagIfInListsJson = jsonSlurper.parseText((grailsApplication.config.search?.tagIfInLists ?: "[]"))
 
+            if (searchResults?.searchResults) {
+                searchResults.searchResults.facetResults.each { facetRes ->
+                    facetRes.fieldResult.each { fieldRes ->
+                        facetsOnlyShowValuesJson.each { facetFilter ->
+                            if (facetRes.fieldName == facetFilter.facet) {
+                                if (!facetFilter.values.contains(fieldRes.fieldValue)) {
+                                    fieldRes.hideThisValue = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             render(view: 'search', model: [
                     searchResults: searchResults?.searchResults,
                     searchResultsPresence: searchResultsPresence?.searchResults,
