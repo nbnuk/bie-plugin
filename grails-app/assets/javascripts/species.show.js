@@ -29,10 +29,7 @@ function showSpeciesPage() {
     addAlerts();
     // loadBhl(); // now an external link to BHL
     //loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName,'trove-integration','trove-result-list','previousTrove','nextTrove');
-
-    if (SHOW_CONF.speciesShowNNSSlink == "true") {
-        addNNSSlink();
-    }
+    
 }
 
 //loads list membership and KVP details under 'Datasets' section, and also adds any headline items to subtitle
@@ -46,6 +43,7 @@ function loadSpeciesLists(){
     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
         if (!data) return;
         var listsDone = [];
+        var doShowNNSS = false;
         for(var i = 0; i < data.length; i++) {
             var specieslist = data[i];
 
@@ -75,9 +73,11 @@ function loadSpeciesLists(){
             }
 
             //add header link to nonnativespecies.org entry if tagged species (INNS specific)
+
             if (SHOW_CONF.speciesShowNNSSlink == "true") {
                 if (SHOW_CONF.tagNNSSlist == specieslist.dataResourceUid) {
                     addNNSSlink(true, specieslist.list.listName);
+                    doShowNNSS = true;
                 }
             }
 
@@ -136,6 +136,11 @@ function loadSpeciesLists(){
                 } else {
                     $description.appendTo('#listContent');
                 }
+            }
+        }
+        if (SHOW_CONF.speciesShowNNSSlink == "true") {
+            if (doShowNNSS) {
+                addNNSSlink(); //ad into 'Online resources' section
             }
         }
     });
