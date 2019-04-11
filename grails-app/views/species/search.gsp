@@ -78,6 +78,11 @@
                         <p>If you have seen an invasive species within Northern Ireland please submit your record to <a href="https://www2.habitas.org.uk/records/ISI">CEDaR Online Recording</a>.</p>
                         <p>Submission of your record will send an immediate alert to a team of experts who will verify the record and take appropriate action.</p>
                     </g:elseif>
+                    <g:elseif test="${filterQuery.contains("listMembership_m_s:\"Northern Ireland Sensitive Species List\"")}">
+                        <h1>Sensitive Species</h1>
+                        <p>Environmentally sensitive information is any which, if released to the public, would result in an ‘adverse effect’ on a feature of the environment. The list of species considered as sensitive in Northern Ireland has been compiled by the Northern Ireland Environment Agency (NIEA) considering threats such as disturbance, egg collection, commercial fishing, collecting, physical harm, destruction or damage of roosts, persecution, etc. This list will be periodically reviewed both by NBN Trust and NIEA.</p>
+                        <p>All data supplied to the NBN Atlas are displayed at the spatial resolution submitted by data providers, except records of species on the NBN Atlas sensitive species lists. Sensitive species records will be only available publicly on the NBN Atlas (to view or download) at the spatial resolution detailed on the sensitive species list (a resolution at which the risk of harm to a species is considered acceptable) Date information will also be reduced in quality to prevent location information being inferred through a common recorder name and date of survey. Access to higher resolution sensitive species records will be available via the NBN Atlas upon request, provided approval from the data partner is granted.</p>
+                    </g:elseif>
                 </g:elseif>
                 <g:else>
                     <h1>
