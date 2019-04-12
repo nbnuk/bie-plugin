@@ -442,6 +442,7 @@
         tagNNSSlist: "${grailsApplication.config.species?.tagNNSSlist?:''}",
         tagNNSSlistHTML: "${grailsApplication.config.species?.tagNNSSlistHTML?:''}",
         speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
+        speciesNNSSlink: "${grailsApplication.config.species?.NNSSlink?:''}",
         speciesListLinks: "${grailsApplication.config.species?.listLinks?:''}",
         nbnRegion: "${grailsApplication.config.nbn?.region?:"n/a"}",
 

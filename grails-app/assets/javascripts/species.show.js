@@ -35,7 +35,9 @@ function showSpeciesPage() {
 //loads list membership and KVP details under 'Datasets' section, and also adds any headline items to subtitle
 function loadSpeciesLists(){
     //console.log('### loadSpeciesLists #### ' + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid);
-    var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split(","); //TODO: what if bad embedded HTML characters? what if key contains comma?
+    if (SHOW_CONF.speciesAdditionalHeadlinesSpeciesList == "") SHOW_CONF.speciesAdditionalHeadlinesSpeciesList = "[]";
+    var listHeadlines = JSON.parse($('<textarea />').html(SHOW_CONF.speciesAdditionalHeadlinesSpeciesList).text());
+    //var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split(","); //TODO: what if bad embedded HTML characters? what if key contains comma?
     var addedToHeadline = [];
     $.each(listHeadlines, function (idx, listHeadline) {addedToHeadline[idx] = false;}); //only allow first species list kvp to match a given headline and be included in the headline area
     //console.log(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?');
@@ -47,7 +49,6 @@ function loadSpeciesLists(){
         for(var i = 0; i < data.length; i++) {
             var specieslist = data[i];
 
-
             var maxListFields = 10;
 
             if (SHOW_CONF.speciesListLinks > "") {
@@ -57,22 +58,71 @@ function loadSpeciesLists(){
                 $.each(specieslist.kvpValues, function (idx, kvpValue) {
                     //check whether to add to headline for species
                     $.each(listHeadlines, function (idx, listHeadline) {
-                        if (specieslist.dataResourceUid + ':' + kvpValue.key == listHeadline && value && !addedToHeadline[idx]) { //for when listHeadline=[dataset]:[key] to show key value for the species list
+                        if (specieslist.dataResourceUid + ':' + kvpValue.key == listHeadline.specieslist && value && !addedToHeadline[idx]) { //for when listHeadline=[dataset]:[key] to show key value for the species list
                             var sppListHeaderHTML = "<h5 class='inline-head'><strong>" + kvpValue.key + ":</strong> ";
-                            sppListHeaderHTML += "<span class='species-headline-" + listHeadline + '-' + kvpValue.key + "'>" + value + "</span>";
+                            sppListHeaderHTML += "<span class='species-headline-" + listHeadline.specieslist + '-' + kvpValue.key + "'>" + value + "</span>";
                             sppListHeaderHTML += "</h5>";
                             $(sppListHeaderHTML).appendTo(".header-inner");
                             addedToHeadline[idx] = true;
-                        } else if (specieslist.dataResourceUid == listHeadline && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
-                            var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadline + "'>" + specieslist.list.listName + "</h5>";
+                        } else if (specieslist.dataResourceUid == listHeadline.specieslist && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
+                            var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadline.specieslist + "'>";
+                            if (listHeadline.url > "") {
+                                if (listHeadline.openExternal == "true") {
+                                    sppListHeaderHTML += "<a href='" + listHeadline.url + "' target='_new'>"; //note, no kvp value for url accommodated here
+                                } else {
+                                    sppListHeaderHTML += "<a href='" + listHeadline.url + "'>";
+                                }
+                            }
+                            if (listHeadline.label == "") {
+                                sppListHeaderHTML += specieslist.list.listName;
+                            } else {
+                                sppListHeaderHTML += listHeadline.label;
+                            }
+                            if (listHeadline.tag > "") {
+                                sppListHeaderHTML += listHeadline.tag;
+                            }
+                            sppListHeaderHTML += "</h5>";
+                            if (listHeadline.url > "") {
+                                sppListHeaderHTML += "</a>";
+                            }
                             $(sppListHeaderHTML).appendTo(".header-inner");
                             addedToHeadline[idx] = true;
                         }
                     });
                 });
+            } else {
+                //check simple list membership lists
+                $.each(listHeadlines, function (idx, listHeadline) {
+                    if (specieslist.dataResourceUid == listHeadline.specieslist && !addedToHeadline[idx]) { //for when listHeadline=[dataset] to simply label membership of species list
+                        var sppListHeaderHTML = "<h5 class='inline-head species-headline-" + listHeadline.specieslist + "'>";
+                        if (listHeadline.url > "") {
+                            if (listHeadline.openExternal == "true") {
+                                sppListHeaderHTML += "<a href='" + listHeadline.url + "' target='_new'>"; //note, no kvp value for url accommodated here
+                            } else {
+                                sppListHeaderHTML += "<a href='" + listHeadline.url + "'>";
+                            }
+                        }
+                        if (listHeadline.label == "") {
+                            sppListHeaderHTML += specieslist.list.listName;
+                        } else {
+                            sppListHeaderHTML += listHeadline.label;
+                        }
+                        if (listHeadline.tag > "") {
+                            sppListHeaderHTML += listHeadline.tag;
+                        }
+                        sppListHeaderHTML += "</h5>";
+                        if (listHeadline.url > "") {
+                            sppListHeaderHTML += "</a>";
+                        }
+
+                        $(sppListHeaderHTML).appendTo(".header-inner");
+                        addedToHeadline[idx] = true;
+                    }
+                });
+
             }
 
-            //add header link to nonnativespecies.org entry if tagged species (INNS specific)
+                //add header link to nonnativespecies.org entry if tagged species (INNS specific)
 
             if (SHOW_CONF.speciesShowNNSSlink == "true") {
                 if (SHOW_CONF.tagNNSSlist == specieslist.dataResourceUid) {
@@ -860,7 +910,7 @@ function addNNSSlink(inHeader, listName) {
     //opens in new tab. Haven't found a clean way of respecting user instructions on same or new tab opening for a form post
     if (typeof inHeader === 'undefined') { inHeader = false; }
     if (typeof listName === 'undefined') { listName = ''; }
-    var NNSSform = "<form style='display:inline' method='post' action='http://www.nonnativespecies.org/factsheet/index.cfm' id='NNSSform" + (inHeader? "_header" : "") + "' target='_blank'>" +
+    var NNSSform = "<form style='display:inline' method='post' action='" + SHOW_CONF.speciesNNSSlink + "' id='NNSSform" + (inHeader? "_header" : "") + "' target='_blank'>" +
         "<input type='hidden' value='" + (SHOW_CONF.scientificName).replace(/'/g, '') + "' name='query'>" +
         "</form>";
     if (inHeader) {
