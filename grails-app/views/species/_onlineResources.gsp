@@ -4,5 +4,4 @@
     <li><a href="http://eol.org/search?q=${tc?.taxonConcept?.nameString}&show_all=true">Encyclopaedia of Life</a></li>
     <li><a href="http://www.biodiversitylibrary.org/search?searchTerm=${tc?.taxonConcept?.nameString}#/names">Biodiversity Heritage Library</a></li>
     <li><a href="http://www.eu-nomen.eu/portal/">PESI</a></li>
-    <li><a href="http://www.arkive.org/explore/species?q=${tc?.taxonConcept?.nameString}">ARKive</a></li>
 </ul>
