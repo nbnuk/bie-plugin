@@ -40,10 +40,16 @@ function loadSpeciesLists(){
     //var listHeadlines = SHOW_CONF.speciesAdditionalHeadlinesSpeciesList.split(","); //TODO: what if bad embedded HTML characters? what if key contains comma?
     var addedToHeadline = [];
     $.each(listHeadlines, function (idx, listHeadline) {addedToHeadline[idx] = false;}); //only allow first species list kvp to match a given headline and be included in the headline area
-    //console.log(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?');
-
-    $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
+    //console.log("Getting lists: " + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?');
+    //this fails: something about the jsonp version with callback=? gives an error
+    /* $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function(d) {
+        alert("success");
+    }).fail( function(d, textStatus, error) {
+        console.error("getJSON failed, status: " + textStatus + ", error: "+error)
+    }); */
+    $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid /* + '?callback=?'*/, function( data ) {
         if (!data) return;
+
         var listsDone = [];
         var doShowNNSS = false;
         for(var i = 0; i < data.length; i++) {
@@ -179,7 +185,6 @@ function loadSpeciesLists(){
                 $description.find(".providedBy").attr('href', SHOW_CONF.speciesListUrl + '/speciesListItem/list/' + specieslist.dataResourceUid);
                 $description.find(".providedBy").html(specieslist.list.listName);
                 if (specieslist.list.region == SHOW_CONF.nbnRegion) {
-                    console.log("equal");
                     var $headerBar = $description.find('.panel-heading');
                     $headerBar.css({'color':'var(--background-color)'});
                     $('#listContent').prepend($description);
@@ -263,18 +268,18 @@ function loadDataProviders(){
 
                     //console.log(uid);
                     $.getJSON(SHOW_CONF.collectoryUrl + "/ws/dataResource/" + uid, function(collectoryData) {
+                        if (collectoryData) {
+                            if (collectoryData.provider) {
+                                tableRow += "<br/><small><a href='" + SHOW_CONF.collectoryUrl + '/public/show/' + uid + "'>" + collectoryData.provider.name + "</a></small>";
+                            }
+                            tableRow += "</td>";
+                            tableRow += "<td>" + collectoryData.licenseType + "</td>";
 
-
-                        if(collectoryData.provider){
-                            tableRow += "<br/><small><a href='" + SHOW_CONF.collectoryUrl + '/public/show/' + uid + "'>" + collectoryData.provider.name + "</a></small>";
+                            var queryUrl = uiUrl + "&fq=" + facetValue.fq;
+                            tableRow += "</td><td><a href='" + queryUrl + "'><span class='record-count'>" + facetValue.count + "</span></a></td>"
+                            tableRow += "</tr>";
+                            $('#data-providers-list tbody').append(tableRow);
                         }
-                        tableRow += "</td>";
-                        tableRow += "<td>" + collectoryData.licenseType + "</td>";
-
-                        var queryUrl = uiUrl + "&fq=" + facetValue.fq;
-                        tableRow += "</td><td><a href='" + queryUrl + "'><span class='record-count'>" + facetValue.count + "</span></a></td>"
-                        tableRow += "</tr>";
-                        $('#data-providers-list tbody').append(tableRow);
                     });
                 }
             });
