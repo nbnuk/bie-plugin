@@ -77,6 +77,7 @@
                         <h1>Invasive Species</h1>
                         <p>If you have seen an invasive species within Northern Ireland please submit your record to <a href="https://www2.habitas.org.uk/records/ISI">CEDaR Online Recording</a>.</p>
                         <p>Submission of your record will send an immediate alert to a team of experts who will verify the record and take appropriate action.</p>
+                        <p>For further information on invasive species in Northern Ireland, including species range, policy related to individual species or species groups and action plans for species that threaten the biodiversity and economy of Northern Ireland, visit <a href="http://invasivespeciesireland.com" title="Invasive Species Ireland" target="_new">Invasive Species Ireland</a>.</p>
                     </g:elseif>
                     <g:elseif test="${filterQuery.contains("listMembership_m_s:\"Northern Ireland Sensitive Species List\"")}">
                         <h1>Sensitive Species</h1>
