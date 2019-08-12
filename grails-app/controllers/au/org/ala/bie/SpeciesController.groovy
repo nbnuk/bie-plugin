@@ -250,6 +250,17 @@ class SpeciesController {
             redirect(uri: "/species/${taxonDetails.taxonConcept.guid}")
 
         } else {
+            def synonymAllResultsOccs = -1
+
+            if (taxonDetails.taxonConcept.acceptedConceptID) {
+                def synonymOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.acceptedConceptID, "presence", recordsFilter, true, false)
+                def synonymOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.acceptedConceptID, "absence", recordsFilter, true, false)
+                synonymAllResultsOccs = synonymOccsPresence + synonymOccsAbsence
+                if ((pageResultsOccsPresence == null) || (synonymOccsAbsence == null)) {
+                    synonymAllResultsOccs = 0
+                }
+            }
+
             def pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence", recordsFilter, true, false)
             def pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence", recordsFilter, true, false)
             def allResultsOccs = pageResultsOccsPresence + pageResultsOccsAbsence
@@ -283,6 +294,7 @@ class SpeciesController {
 
             render(view: 'show', model: [
                     tc: taxonDetails,
+                    synonymOccurrenceRecords: synonymAllResultsOccs,
                     searchResults: searchResults,
                     searchResultsPresence: searchResultsPresence,
                     searchResultsAbsence: searchResultsAbsence,

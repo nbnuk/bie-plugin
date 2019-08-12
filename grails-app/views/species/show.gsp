@@ -108,7 +108,8 @@
                 <h2>${raw(commonNameSingleDisplay)}</h2>
             </g:if>
             <g:if test="${tc?.taxonConcept?.acceptedConceptName}">
-                <h2><g:link uri="/species/${tc.taxonConcept.acceptedConceptID}">${tc.taxonConcept.acceptedConceptName}</g:link></h2>
+                Click below for synonym of
+                <h2><g:link uri="/species/${tc.taxonConcept.acceptedConceptID}">${tc.taxonConcept.acceptedConceptName}</g:link> - (${synonymOccurrenceRecords} records)</h2>
             </g:if>
             <h5 class="inline-head taxon-rank">${tc.taxonConcept.rankString}</h5>
             <g:if test="${tc.taxonConcept.taxonomicStatus}"><h5 class="inline-head taxonomic-status" title="${message(code: 'taxonomicStatus.' + tc.taxonConcept.taxonomicStatus + '.detail', default: '')}"><g:message code="taxonomicStatus.${tc.taxonConcept.taxonomicStatus}" default="${tc.taxonConcept.taxonomicStatus}"/></h5></g:if>
@@ -127,21 +128,26 @@
         </div>
     </header>
 
-    <div id="main-content" class="main-content panel panel-body">
-        <div class="taxon-tabs">
-            <ul class="nav nav-tabs">
-                <g:each in="${tabs}" status="ts" var="tab">
-                    <li class="${ts == 0 ? 'active' : ''}"><a href="#${tab}" data-toggle="tab"><g:message
-                            code="label.${tab}" default="${tab}"/></a></li>
-                </g:each>
-            </ul>
-            <div class="tab-content">
-                <g:each in="${tabs}" status="ts" var="tab">
-                    <g:render template="${tab}"/>
-                </g:each>
+    <!-- don't display full page where there is an accepted synonym -->
+    <g:if test="${!tc?.taxonConcept?.acceptedConceptName}">
+
+        <div id="main-content" class="main-content panel panel-body">
+            <div class="taxon-tabs">
+                <ul class="nav nav-tabs">
+                    <g:each in="${tabs}" status="ts" var="tab">
+                        <li class="${ts == 0 ? 'active' : ''}"><a href="#${tab}" data-toggle="tab"><g:message
+                                code="label.${tab}" default="${tab}"/></a></li>
+                    </g:each>
+                </ul>
+                <div class="tab-content">
+                    <g:each in="${tabs}" status="ts" var="tab">
+                        <g:render template="${tab}"/>
+                    </g:each>
+                </div>
             </div>
-        </div>
-    </div><!-- end main-content -->
+        </div><!-- end main-content -->
+    </g:if>
+
 </section>
 
 <!-- taxon-summary-thumb template -->
