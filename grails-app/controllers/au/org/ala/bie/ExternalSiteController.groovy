@@ -105,7 +105,7 @@ class ExternalSiteController {
                     wikipediaContent.taxonConcept.dataObjects = []
                 }
             }
-            if (wikipediaContent?.taxonConcept?.dataObjects.size()) {
+            if (wikipediaContent?.taxonConcept?.dataObjects?.size()) {
                 jsonOutput = JsonOutput.toJson(wikipediaContent)
                 //jsonOutput = wikipediaContent
                 log.info("Using Wikipedia content from EOL")
