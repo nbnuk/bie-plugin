@@ -6,6 +6,7 @@ import spock.lang.Specification
 /**
  * See the API for {@link grails.test.mixin.web.ControllerUnitTestMixin} for usage instructions
  */
+/*
 @TestFor(BiocacheServiceController)
 class BiocacheServiceControllerSpec extends Specification {
 
@@ -20,3 +21,4 @@ class BiocacheServiceControllerSpec extends Specification {
             true == false
     }
 }
+*/
