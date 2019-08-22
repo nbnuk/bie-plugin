@@ -1,4 +1,4 @@
-###    [![Build Status](https://travis-ci.org/AtlasOfLivingAustralia/bie-plugin.svg?branch=master)](https://travis-ci.org/AtlasOfLivingAustralia/bie-plugin)
+###    [![Build Status](https://travis-ci.org/nbnuk/bie-plugin.svg?branch=master)](https://travis-ci.org/nbnuk/bie-plugin)
 
 ### Languages
 
