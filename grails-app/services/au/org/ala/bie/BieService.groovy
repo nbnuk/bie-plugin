@@ -2,6 +2,7 @@ package au.org.ala.bie
 
 import au.org.ala.bie.webapp2.SearchRequestParamsDTO
 import grails.converters.JSON
+import org.apache.commons.httpclient.util.URIUtil
 import org.grails.web.json.JSONObject
 
 class BieService {
@@ -17,12 +18,12 @@ class BieService {
 
         //add a query context for BIE - to reduce taxa to a subset
         if(grailsApplication.config.bieService.queryContext){
-            queryUrl = queryUrl + "&" + grailsApplication.config.bieService.queryContext.replaceAll(" ","%20")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
+            queryUrl = queryUrl + "&" + URIUtil.encodeWithinQuery(grailsApplication.config.bieService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
         }
 
         //add a query context for biocache - this will influence record counts
         if(grailsApplication.config.biocacheService.queryContext){
-            queryUrl = queryUrl + "&bqc=" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ","%20")
+            queryUrl = queryUrl + "&bqc=" + URIUtil.encodeWithinQuery(grailsApplication.config.biocacheService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
         }
         log.info("queryUrl = " + queryUrl)
         def json = webService.get(queryUrl)
@@ -40,26 +41,26 @@ class BieService {
 
         //add a query context for BIE - to reduce taxa to a subset
         if(grailsApplication.config.bieService.queryContext){
-            queryUrl = queryUrl + "&" + grailsApplication.config.bieService.queryContext.replaceAll(" ","%20")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
+            queryUrl = queryUrl + "&" + URIUtil.encodeWithinQuery(grailsApplication.config.bieService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
         }
 
         //add a query context for biocache - this will influence record counts
         if (!overrideBiocacheContext) {
             if (grailsApplication.config.biocacheService.queryContext) {
                 //watch out for mutually exclusive conditions between queryContext and occFilter, e.g. if queryContext=occurrence_status:present and occFilter=occurrence_stats:absent then will get zero records returned
-                queryUrl = queryUrl + "&bqc=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20")
+                queryUrl = queryUrl + "&bqc=(" + URIUtil.encodeWithinQuery(grailsApplication.config.biocacheService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 if (occFilter) {
-                    queryUrl = queryUrl + "%20AND%20" + occFilter.replaceAll(" ", "%20")
+                    queryUrl = queryUrl + "%20AND%20" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 }
                 queryUrl = queryUrl + ")"
             } else {
                 if (occFilter) {
-                    queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20")
+                    queryUrl = queryUrl + "&bqc=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 }
             }
         } else {
             if (occFilter) {
-                queryUrl = queryUrl + "&bqc=(" + occFilter.replaceAll(" ", "%20") + ")"
+                queryUrl = queryUrl + "&bqc=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":") + ")"
             }
         }
 
@@ -145,25 +146,25 @@ class BieService {
         //add a query context for biocache - this will influence record counts
         if (!overrideBiocacheContext) {
             if (grailsApplication.config.biocacheService?.queryContext) {
-                url = url + "&fq=(" + (grailsApplication.config.biocacheService.queryContext).replaceAll(" ", "%20")
+                url = url + "&fq=(" + URIUtil.encodeWithinQuery(grailsApplication.config.biocacheService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 if (occFilter) {
-                    url = url + "%20AND%20" + occFilter.replaceAll(" ", "%20")
+                    url = url + "%20AND%20" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 }
                 url = url + ")"
             } else {
                 if (occFilter) {
-                    url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
+                    url = url + "&fq=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":") + ")"
                 }
             }
         } else {
             if (occFilter) {
-                url = url + "&fq=(" + occFilter.replaceAll(" ", "%20") + ")"
+                url = url + "&fq=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":") + ")"
             }
         }
 
         if (!overrideAdditionalMapFilter) {
             if (grailsApplication.config?.additionalMapFilter) {
-                url = url + "&" + grailsApplication.config.additionalMapFilter.replaceAll(" ", "%20")
+                url = url + "&" + URIUtil.encodeWithinQuery(grailsApplication.config.additionalMapFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
             }
         }
 

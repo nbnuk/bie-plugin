@@ -130,8 +130,8 @@ class SpeciesController {
         def searchResultsAbsence
         if ((grailsApplication.config?.search?.mapPresenceAndAbsence?:"") == "true") {
             if (grailsApplication.config?.biocacheService?.altQueryContext) {
-                searchResultsPresence = bieService.searchBieOccFilter(requestObj, recordsFilter + "%20AND%20" + "-occurrence_status:absent", true)
-                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, recordsFilter + "%20AND%20" + "occurrence_status:absent", true)
+                searchResultsPresence = bieService.searchBieOccFilter(requestObj, recordsFilter + " AND " + "-occurrence_status:absent", true)
+                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, recordsFilter + " AND " + "occurrence_status:absent", true)
             } else {
                 searchResultsPresence = bieService.searchBieOccFilter(requestObj, "-occurrence_status:absent", false)
                 searchResultsAbsence = bieService.searchBieOccFilter(requestObj, "occurrence_status:absent", false)
