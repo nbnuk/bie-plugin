@@ -460,7 +460,7 @@
                                             </div>
                                         </g:if>
 
-                                        <h3>${result.rank}:
+                                        <h3>${result.rank.capitalize()}:
                                             <a href="${acceptedPageLink}"><bie:formatSciName rankId="${result.rankID}"
                                                                                              taxonomicStatus="${result.taxonomicStatus}"
                                                                                              nameFormatted="${result.nameFormatted}"
@@ -471,8 +471,21 @@
                                                 class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span></g:if>
                                         </h3>
 
-                                        <g:if test="${result.commonName != result.commonNameSingle}"><p
-                                                class="alt-names">${result.commonName}</p></g:if>
+                                        <g:if test="${result.has("taxonGroup_s") && result.taxonGroup_s}">
+                                            <p class="taxonGroup_s">${result.taxonGroup_s.capitalize()}</p>
+                                        </g:if>
+
+                                        <g:if test="${result.has("synonymComplete") && result.synonymComplete &&
+                                                result.synonymComplete.any{ it != result.name } && /* dont show naked name synonym */
+                                                result.synonymComplete.findAll{it != result.name}.any{ it.toLowerCase().contains(searchResults.queryTitle.toLowerCase()) } /* crude check if a synonym contains search term */ }">
+                                            <p class="alt-names">
+                                                ${raw(result.synonymCompleteHighlighted.findAll{it != result.name}.join(', ').replaceAll("\"", "")) /* use raw because synonymCompleteHighlighted contains html markup */}</p>
+                                        </g:if>
+
+
+                                        <g:if test="${result.has("commonName") && result.commonName && result.commonName != result.commonNameSingle}">
+                                            <p class="alt-names">${result.commonName}</p>
+                                        </g:if>
 
                                         <g:if test="${taxonPageLink != acceptedPageLink}"><p
                                                 class="alt-names"></p></g:if>

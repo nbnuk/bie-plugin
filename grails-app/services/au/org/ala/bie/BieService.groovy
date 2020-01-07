@@ -10,6 +10,7 @@ class BieService {
     def webService
     def grailsApplication
 
+    //legacy, not used
     def searchBie(SearchRequestParamsDTO requestObj) {
 
         def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
@@ -28,6 +29,59 @@ class BieService {
         log.info("queryUrl = " + queryUrl)
         def json = webService.get(queryUrl)
         JSON.parse(json)
+    }
+
+    //take a name or TVK and return the JSON for that taxa and any direct children sorted so that the query term is at the top
+    //wsQueryUrl: current query URL including q= term and any other constraints
+    //strOriginalQueryTerm: original search term (e.g. could be a synonym of current searched name)
+    //strName: search name (encoded) - ignored if TVK is set
+    //strTVK: taxon guid - takes priority over name. Only one should be != ''
+    //booMatchFull: match against full name with authority (true) or not (false). Assumed that first match against naked name, as most common search
+    //booAllowSynonymMatch: allow matching against synonym of entry
+    //only works for family, genus, species (defined by rankID so can accommodate subgenus, etc.), not higher taxonomies
+    def searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, strTVK, booMatchFull, booAllowSynonymMatch) {
+        def queryUrlWithoutQ = wsQueryUrl.replace("?q=" + strOriginalQueryTerm,"?q=*:*")
+        //def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'nameComplete' : 'scientificName'))
+        def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'name_complete' : 'scientific_name'))
+        //TODO: include option to include 'OR synonym=x' or 'OR synonymComplete=x' to query if searching on strName not strTVK
+        def toMatch = (strTVK != ''? strTVK : strName)
+        def matchFQ = matchAgainst + ":%22" + toMatch + "%22"
+        if (booAllowSynonymMatch && strTVK == '') { //only do this for name matches, not tvk
+            matchFQ = "%28" + matchFQ + "+OR+synonym:%22" + toMatch + "%22%29"
+        }
+        def haveAcceptableResults = false
+        def acceptableResults = JSON.parse("{}")
+
+        def queryUrlExactMatch = queryUrlWithoutQ + "&fq=taxonomicStatus:accepted&fq=" + matchFQ
+        def json = webService.get(queryUrlExactMatch)
+        def resJson = JSON.parse(json)
+        if (resJson.searchResults?.totalRecords > 0) { //if +1 result might need to OR all of these together, but it could create some interesting results for naked names with different accepted entries with different authorities
+            if (resJson.searchResults.results[0].rankID >= 5000 && resJson.searchResults.results[0].rankID < 8000) {
+                //family, genus and species taxonomic levels
+                def queryUrlFGSAndChildren = queryUrlWithoutQ + "&fq=taxonomicStatus:accepted&fq=%28" + matchFQ + "+OR+parentGuid:" + resJson.searchResults.results[0].guid + "%29"
+                if (resJson.searchResults.results[0].rankID >= 5000 && resJson.searchResults.results[0].rankID < 6000) {
+                    queryUrlFGSAndChildren = queryUrlFGSAndChildren.replace("&sort=", "&sort2=").replace("&dir=", "&dir2=") + "&sort=rankID&dir=ASC"
+                }
+                json = webService.get(queryUrlFGSAndChildren)
+                def resJsonWithChild = JSON.parse(json)
+                if (resJsonWithChild.searchResults?.totalRecords > 0) {
+                    resJsonWithChild.searchResults.queryTitle = strOriginalQueryTerm
+                    acceptableResults = resJsonWithChild
+                } else {
+                    acceptableResults = resJson
+                }
+            } else {
+                acceptableResults = resJson
+            }
+            haveAcceptableResults = true
+        }
+
+
+        if (haveAcceptableResults || booMatchFull || strTVK != '') { //don't try again
+            acceptableResults
+        } else {
+            searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, strTVK, true, booAllowSynonymMatch)
+        }
     }
 
     //additional filter on occurrence records to get different occurrenceCount values for e.g. occurrence_status:absent records
@@ -65,8 +119,90 @@ class BieService {
         }
 
         log.info("queryUrlOccFilter = " + queryUrl)
-        def json = webService.get(queryUrl)
-        JSON.parse(json)
+        def queryParam = URIUtil.encodeWithinQuery(requestObj.q).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+
+        def haveAcceptableResults = false
+        def acceptableResults = JSON.parse("{}")
+
+        if (! haveAcceptableResults) {
+            //try accepted, match without authority
+            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, "", false, true)
+            if (acceptableResults?.searchResults) haveAcceptableResults = true
+        }
+
+        if (! haveAcceptableResults) {
+            //try synonyms, exact match still
+            def queryUrlExactMatch = queryUrl + "&fq=scientific_name:%22" + queryParam + "%22"; //note scientific_name is case-insensitive and has various syntax chars removed for better matching
+            def json = webService.get(queryUrlExactMatch)
+            def resJson = JSON.parse(json)
+            if (resJson.searchResults?.totalRecords > 0) { //what if more than one result?
+                acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", resJson.searchResults.results[0].acceptedConceptID, false, false)
+                if (acceptableResults?.searchResults) haveAcceptableResults = true
+            } else {
+                queryUrlExactMatch = queryUrl + "&fq=name_complete:%22" + queryParam + "%22";
+                json = webService.get(queryUrlExactMatch)
+                resJson = JSON.parse(json)
+                if (resJson.searchResults?.totalRecords > 0) { //what if more than one result?
+                    acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", resJson.searchResults.results[0].acceptedConceptID, false, false)
+                    if (acceptableResults?.searchResults) haveAcceptableResults = true
+                } else {
+                    //no synonym match
+                }
+            }
+        }
+
+        if (! haveAcceptableResults) {
+            def queryUrlExactCommonName = queryUrl + "&fq=taxonomicStatus:accepted&fq=commonName:%22" + queryParam + "%22";
+            def json = webService.get(queryUrlExactCommonName)
+            def resJson = JSON.parse(json)
+            if (resJson.searchResults?.totalRecords > 0) {
+                acceptableResults = resJson
+                haveAcceptableResults = true
+            }
+        }
+
+
+        if (! haveAcceptableResults) {
+            def queryUrlAccepted = queryUrl + "&fq=taxonomicStatus:accepted"
+            def json = webService.get(queryUrlAccepted)
+            def resJson = JSON.parse(json)
+            if (resJson.searchResults?.totalRecords > 0) {
+                acceptableResults = resJson
+                haveAcceptableResults = true
+            }
+        }
+
+        if (! haveAcceptableResults) {
+            //give up?
+            def json = webService.get(queryUrl)
+            def resJson = JSON.parse(json)
+            //TODO: need to change sort order to best-match desc maybe?
+            acceptableResults = resJson
+            haveAcceptableResults = true //well, maybe
+        }
+
+        //some horrible code to build fake-highlights into the synonym list
+        acceptableResults?.searchResults?.results?.each { result ->
+            def synonymCompleteHighlighted = []
+            if (result?.synonymComplete) {
+                result.synonymComplete.each {
+                    if (it.toLowerCase() != result.name.toLowerCase()) { //exclude naked name synonyms
+                        def startPos = it.toLowerCase().indexOf(requestObj.q.toLowerCase())
+                        if (startPos >= 0) {
+                            def strStart = (startPos > 0 ? it.substring(0, startPos) : '')
+                            def strMatched = it.substring(startPos, startPos + requestObj.q.length())
+                            def strEnd = (it.length() > startPos + requestObj.q.length() ? it.substring(startPos + requestObj.q.length()) : '')
+                            synonymCompleteHighlighted.add(strStart + "<b>" + strMatched + "</b>" + strEnd)
+                        } else {
+                            synonymCompleteHighlighted.add(it)
+                        }
+                    }
+                }
+            }
+            result.synonymCompleteHighlighted = synonymCompleteHighlighted
+        }
+
+        acceptableResults
     }
 
     def getSpeciesList(guid){
