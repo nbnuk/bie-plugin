@@ -39,8 +39,9 @@ class BieService {
     //booMatchFull: match against full name with authority (true) or not (false). Assumed that first match against naked name, as most common search
     //booAllowSynonymMatch: allow matching against synonym of entry
     //only works for family, genus, species (defined by rankID so can accommodate subgenus, etc.), not higher taxonomies
-    def searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, strTVK, booMatchFull, booAllowSynonymMatch) {
+    def searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, intPage, strTVK, booMatchFull, booAllowSynonymMatch) {
         def queryUrlWithoutQ = wsQueryUrl.replace("?q=" + strOriginalQueryTerm,"?q=*:*")
+        def queryUrlWithoutQandPage = queryUrlWithoutQ.replace("start=" + intPage,"start=0")
         //def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'nameComplete' : 'scientificName'))
         def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'name_complete' : 'scientific_name'))
         //TODO: include option to include 'OR synonym=x' or 'OR synonymComplete=x' to query if searching on strName not strTVK
@@ -52,10 +53,11 @@ class BieService {
         def haveAcceptableResults = false
         def acceptableResults = JSON.parse("{}")
 
-        def queryUrlExactMatch = queryUrlWithoutQ + "&fq=taxonomicStatus:accepted&fq=" + matchFQ
+        def queryUrlExactMatch = queryUrlWithoutQandPage + "&fq=taxonomicStatus:accepted&fq=" + matchFQ
         def json = webService.get(queryUrlExactMatch)
         def resJson = JSON.parse(json)
-        if (resJson.searchResults?.totalRecords > 0) { //if +1 result might need to OR all of these together, but it could create some interesting results for naked names with different accepted entries with different authorities
+        def resultsInThisPage = resJson.searchResults?.results?.size()?: 0 //note, not totalResults since could be on 2nd or further page, beyond end of results
+        if (resultsInThisPage > 0) { //if +1 result might need to OR all of these together, but it could create some interesting results for naked names with different accepted entries with different authorities
             if (resJson.searchResults.results[0].rankID >= 5000 && resJson.searchResults.results[0].rankID < 8000) {
                 //family, genus and species taxonomic levels
                 def queryUrlFGSAndChildren = queryUrlWithoutQ + "&fq=taxonomicStatus:accepted&fq=%28" + matchFQ + "+OR+parentGuid:" + resJson.searchResults.results[0].guid + "%29"
@@ -80,7 +82,7 @@ class BieService {
         if (haveAcceptableResults || booMatchFull || strTVK != '') { //don't try again
             acceptableResults
         } else {
-            searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, strTVK, true, booAllowSynonymMatch)
+            searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, intPage, strTVK, true, booAllowSynonymMatch)
         }
     }
 
@@ -121,29 +123,36 @@ class BieService {
         log.info("queryUrlOccFilter = " + queryUrl)
         def queryParam = URIUtil.encodeWithinQuery(requestObj.q).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
 
+        def queryPage = requestObj.start?:0
+
         def haveAcceptableResults = false
         def acceptableResults = JSON.parse("{}")
+        def resultsInThisPage = 0
 
         if (! haveAcceptableResults) {
             //try accepted, match without authority
-            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, "", false, true)
+            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, queryPage, "", false, false)
             if (acceptableResults?.searchResults) haveAcceptableResults = true
         }
 
         if (! haveAcceptableResults) {
             //try synonyms, exact match still
             def queryUrlExactMatch = queryUrl + "&fq=scientific_name:%22" + queryParam + "%22"; //note scientific_name is case-insensitive and has various syntax chars removed for better matching
-            def json = webService.get(queryUrlExactMatch)
+            def queryUrlExactMatchWithoutPage = queryUrlExactMatch.replace("start=" + queryPage,"start=0")
+            def json = webService.get(queryUrlExactMatchWithoutPage)
             def resJson = JSON.parse(json)
-            if (resJson.searchResults?.totalRecords > 0) { //what if more than one result?
-                acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", resJson.searchResults.results[0].acceptedConceptID, false, false)
+            resultsInThisPage = resJson.searchResults?.results?.size()?: 0
+            if (resultsInThisPage > 0) { //what if more than one result?
+                acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", queryPage, resJson.searchResults.results[0].acceptedConceptID, false, false)
                 if (acceptableResults?.searchResults) haveAcceptableResults = true
             } else {
                 queryUrlExactMatch = queryUrl + "&fq=name_complete:%22" + queryParam + "%22";
-                json = webService.get(queryUrlExactMatch)
+                queryUrlExactMatchWithoutPage = queryUrlExactMatch.replace("start=" + queryPage,"start=0")
+                json = webService.get(queryUrlExactMatchWithoutPage)
                 resJson = JSON.parse(json)
-                if (resJson.searchResults?.totalRecords > 0) { //what if more than one result?
-                    acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", resJson.searchResults.results[0].acceptedConceptID, false, false)
+                resultsInThisPage = resJson.searchResults?.results?.size()?: 0
+                if (resultsInThisPage > 0) { //what if more than one result?
+                    acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", queryPage, resJson.searchResults.results[0].acceptedConceptID, false, false)
                     if (acceptableResults?.searchResults) haveAcceptableResults = true
                 } else {
                     //no synonym match
@@ -153,10 +162,13 @@ class BieService {
 
         if (! haveAcceptableResults) {
             def queryUrlExactCommonName = queryUrl + "&fq=taxonomicStatus:accepted&fq=commonName:%22" + queryParam + "%22";
-            def json = webService.get(queryUrlExactCommonName)
+            def queryUrlExactCommonNameWithoutPage = queryUrlExactCommonName.replace("start=" + queryPage,"start=0")
+            def json = webService.get(queryUrlExactCommonNameWithoutPage)
             def resJson = JSON.parse(json)
-            if (resJson.searchResults?.totalRecords > 0) {
-                acceptableResults = resJson
+            resultsInThisPage = resJson.searchResults?.results?.size()?: 0
+            if (resultsInThisPage > 0) {
+                json = webService.get(queryUrlExactCommonName)
+                acceptableResults = JSON.parse(json)
                 haveAcceptableResults = true
             }
         }
@@ -164,10 +176,13 @@ class BieService {
 
         if (! haveAcceptableResults) {
             def queryUrlAccepted = queryUrl + "&fq=taxonomicStatus:accepted"
-            def json = webService.get(queryUrlAccepted)
+            def queryUrlAcceptedWithoutPage = queryUrlAccepted.replace("start=" + queryPage,"start=0")
+            def json = webService.get(queryUrlAcceptedWithoutPage)
             def resJson = JSON.parse(json)
-            if (resJson.searchResults?.totalRecords > 0) {
-                acceptableResults = resJson
+            resultsInThisPage = resJson.searchResults?.results?.size()?: 0
+            if (resultsInThisPage > 0) {
+                json = webService.get(queryUrlAccepted)
+                acceptableResults = JSON.parse(json)
                 haveAcceptableResults = true
             }
         }
