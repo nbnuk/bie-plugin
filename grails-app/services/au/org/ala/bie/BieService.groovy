@@ -57,7 +57,9 @@ class BieService {
         def json = webService.get(queryUrlExactMatch)
         def resJson = JSON.parse(json)
         def resultsInThisPage = resJson.searchResults?.results?.size()?: 0 //note, not totalResults since could be on 2nd or further page, beyond end of results
-        if (resultsInThisPage > 0) { //if +1 result might need to OR all of these together, but it could create some interesting results for naked names with different accepted entries with different authorities
+        if (resultsInThisPage > 0) {
+                //if +1 result might need to OR all of these together, but it could create some interesting results for naked names with different accepted entries with different authorities
+                //http://localhost:8080/search?fq=idxtype%3ATAXON&q=bird - only first (genus) has its child taxa included; so that would be a good test case
             if (resJson.searchResults.results[0].rankID >= 5000 && resJson.searchResults.results[0].rankID < 8000) {
                 //family, genus and species taxonomic levels
                 def queryUrlFGSAndChildren = queryUrlWithoutQ + "&fq=taxonomicStatus:accepted&fq=%28" + matchFQ + "+OR+parentGuid:" + resJson.searchResults.results[0].guid + "%29"
@@ -131,7 +133,7 @@ class BieService {
 
         if (! haveAcceptableResults) {
             //try accepted, match without authority
-            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, queryPage, "", false, false)
+            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, queryPage, "", false, true)
             if (acceptableResults?.searchResults) haveAcceptableResults = true
         }
 

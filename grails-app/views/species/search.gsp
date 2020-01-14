@@ -89,7 +89,17 @@
                     <h1>
                         Search for <strong>${searchResults.queryTitle == "*:*" ? 'everything' : searchResults.queryTitle}</strong>
                         returned <g:formatNumber number="${searchResults.totalRecords}" type="number"/>
-                        results.
+                        <g:if test="${filterQuery.contains("idxtype:TAXON")}">
+                            <g:if test="${searchResults.totalRecords != 1}">
+                                taxa.
+                            </g:if>
+                            <g:else>
+                                taxon.
+                            </g:else>
+                        </g:if>
+                        <g:else>
+                            results.
+                        </g:else>
                     </h1>
                 </g:else>
             </div>
@@ -376,7 +386,7 @@
                             <div class="form-group">
                                 <label for="sort-by">Sort by</label>
                                 <select class="form-control input-sm" id="sort-by" name="sort-by">
-                                    <option value="score" ${(params.sortField == 'score' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'score')) ? "selected=\"selected\"" : ""}>best match</option>
+                                    <!-- <option value="score" ${(params.sortField == 'score' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'score')) ? "selected=\"selected\"" : ""}>best match</option> -->
                                     <option value="scientificName" ${(params.sortField == 'scientificName' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'scientificName')) ? "selected=\"selected\"" : ""}>scientific name</option>
                                     <option value="commonNameSingle" ${(params.sortField == 'commonNameSingle' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'commonNameSingle')) ? "selected=\"selected\"" : ""}>common name</option>
                                     <option value="rank" ${(params.sortField == 'rank' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'rank')) ? "selected=\"selected\"" : ""}>taxon rank</option>
@@ -484,7 +494,12 @@
 
 
                                         <g:if test="${result.has("commonName") && result.commonName && result.commonName != result.commonNameSingle}">
-                                            <p class="alt-names">${result.commonName}</p>
+                                            <p class="alt-names">
+                                                <g:set var="hasAtLeastOneNameListed" value="${false}"/>
+                                                <g:each var="cName"
+                                                    in="${result.commonName.split(",")}"
+                                                        status="counter"><g:if test="${cName.trim().toLowerCase() != result.commonNameSingle.toLowerCase()}"><g:if test="${counter && hasAtLeastOneNameListed}">, </g:if>${cName.trim()}<g:set var="hasAtLeastOneNameListed" value="${true}"/></g:if></g:each>
+                                            </p>
                                         </g:if>
 
                                         <g:if test="${taxonPageLink != acceptedPageLink}"><p
@@ -574,7 +589,7 @@
                                             <span class="searchDescription">${result.description?.trimLength(500)}</span>
                                         </p>
                                     </g:elseif>
-                                    <g:elseif test="${result.has("highlight") && result.get("highlight")}">
+                                    <g:elseif test="${result.has("highlight") && result.get("highlight") && false /* hidden for now */}">
                                         <h4><g:message code="idxtype.${result.idxtype}"/>:
                                             <a href="${result.guid}">${result.name}</a></h4>
 
@@ -586,7 +601,7 @@
                                         <h4><g:message code="idxtype.${result.idxtype}"/> TEST: <a
                                                 href="${result.guid}">${result.name}</a></h4>
                                     </g:else>
-                                    <g:if test="${result.has("highlight")}">
+                                    <g:if test="${result.has("highlight") && false /* hidden for now */}">
                                         <p><bie:displaySearchHighlights highlight="${result.highlight}"/></p>
                                     </g:if>
                                     <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON'}">
