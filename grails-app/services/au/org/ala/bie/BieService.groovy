@@ -38,17 +38,20 @@ class BieService {
     //strTVK: taxon guid - takes priority over name. Only one should be != ''
     //booMatchFull: match against full name with authority (true) or not (false). Assumed that first match against naked name, as most common search
     //booAllowSynonymMatch: allow matching against synonym of entry
+    //booAllowCommonMatch: allow matching against common name of entry
     //only works for family, genus, species (defined by rankID so can accommodate subgenus, etc.), not higher taxonomies
-    def searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, intPage, strTVK, booMatchFull, booAllowSynonymMatch) {
+    def searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, intPage, strTVK, booMatchFull, booAllowSynonymMatch, booAllowCommonMatch) {
         def queryUrlWithoutQ = wsQueryUrl.replace("?q=" + strOriginalQueryTerm,"?q=*:*")
         def queryUrlWithoutQandPage = queryUrlWithoutQ.replace("start=" + intPage,"start=0")
         //def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'nameComplete' : 'scientificName'))
         def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'name_complete' : 'scientific_name'))
-        //TODO: include option to include 'OR synonym=x' or 'OR synonymComplete=x' to query if searching on strName not strTVK
         def toMatch = (strTVK != ''? strTVK : strName)
         def matchFQ = matchAgainst + ":%22" + toMatch + "%22"
-        if (booAllowSynonymMatch && strTVK == '') { //only do this for name matches, not tvk
-            matchFQ = "%28" + matchFQ + "+OR+synonym:%22" + toMatch + "%22%29"
+        if ((booAllowSynonymMatch || booAllowCommonMatch) && strTVK == '') { //only do this for name matches, not tvk
+            matchFQ = "%28" + matchFQ +
+                    (booAllowSynonymMatch? "+OR+synonym:%22" + toMatch + "%22": "") +
+                    (booAllowCommonMatch? "+OR+commonName:%22" + toMatch + "%22" : "") +
+                    "%29"
         }
         def haveAcceptableResults = false
         def acceptableResults = JSON.parse("{}")
@@ -84,7 +87,7 @@ class BieService {
         if (haveAcceptableResults || booMatchFull || strTVK != '') { //don't try again
             acceptableResults
         } else {
-            searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, intPage, strTVK, true, booAllowSynonymMatch)
+            searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, intPage, strTVK, true, booAllowSynonymMatch, booAllowCommonMatch)
         }
     }
 
@@ -133,7 +136,7 @@ class BieService {
 
         if (! haveAcceptableResults) {
             //try accepted, match without authority
-            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, queryPage, "", false, true)
+            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, queryPage, "", false, true, true)
             if (acceptableResults?.searchResults) haveAcceptableResults = true
         }
 
@@ -145,7 +148,7 @@ class BieService {
             def resJson = JSON.parse(json)
             resultsInThisPage = resJson.searchResults?.results?.size()?: 0
             if (resultsInThisPage > 0) { //what if more than one result?
-                acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", queryPage, resJson.searchResults.results[0].acceptedConceptID, false, false)
+                acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", queryPage, resJson.searchResults.results[0].acceptedConceptID, false, false, false)
                 if (acceptableResults?.searchResults) haveAcceptableResults = true
             } else {
                 queryUrlExactMatch = queryUrl + "&fq=name_complete:%22" + queryParam + "%22";
@@ -154,7 +157,7 @@ class BieService {
                 resJson = JSON.parse(json)
                 resultsInThisPage = resJson.searchResults?.results?.size()?: 0
                 if (resultsInThisPage > 0) { //what if more than one result?
-                    acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", queryPage, resJson.searchResults.results[0].acceptedConceptID, false, false)
+                    acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, "", queryPage, resJson.searchResults.results[0].acceptedConceptID, false, false, false)
                     if (acceptableResults?.searchResults) haveAcceptableResults = true
                 } else {
                     //no synonym match
