@@ -15,6 +15,7 @@
 <%@ page import="au.org.ala.bie.BieTagLib" contentType="text/html;charset=UTF-8" %>
 <g:set var="alaUrl" value="${grailsApplication.config.ala.baseURL}"/>
 <g:set var="biocacheUrl" value="${grailsApplication.config.biocache.baseURL}"/>
+<g:set var="filterQueryString" value="${!filterQuery.isEmpty()? '&fq=' + filterQuery?.join("&fq=") : ''}"/>
 <!doctype html>
 <html>
 <head>
@@ -349,7 +350,7 @@
         <g:if test="${idxTypes.contains("TAXON") || (grailsApplication.config.nbn?.alwaysshowdownloadbutton?:'') == 'true'}">
             <div class="download-button pull-right">
                 <g:set var="downloadUrl"
-                       value="${grailsApplication.config.bie.index.url}/download?${searchResultsQuery}${((grailsApplication.config.bieService.queryContext?:'.').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
+                       value="${grailsApplication.config.bie.index.url}/download?${searchResultsQuery}${filterQueryString}${((grailsApplication.config.bieService.queryContext?:'.').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
                 <a class="btn btn-default active btn-small" href="${downloadUrl}"
                    title="Download a list of taxa for your search">
                     <i class="glyphicon glyphicon-download"></i>
