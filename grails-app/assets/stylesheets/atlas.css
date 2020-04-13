@@ -312,5 +312,9 @@ html, body {height:100%;}
 }
 
 .alt-names {
-    margin: 0px 0px 0px 14px;
+    margin: 0px 0px 0px 0px;
+}
+
+.establishmentMeans {
+    font-variant: small-caps;
 }

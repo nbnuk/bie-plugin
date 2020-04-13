@@ -87,18 +87,18 @@
                 </g:elseif>
                 <g:else>
                     <h1>
-                        Search for <strong>${searchResults.queryTitle == "*:*" ? 'everything' : searchResults.queryTitle}</strong>
+                        Search for <strong>${searchResults.queryTitle != "*:*" ? searchResults.queryTitle : (query? query : 'everything')}</strong>
                         returned <g:formatNumber number="${searchResults.totalRecords}" type="number"/>
                         <g:if test="${filterQuery.contains("idxtype:TAXON")}">
                             <g:if test="${searchResults.totalRecords != 1}">
-                                taxa.
+                                taxa
                             </g:if>
                             <g:else>
-                                taxon.
+                                taxon
                             </g:else>
                         </g:if>
                         <g:else>
-                            results.
+                            results
                         </g:else>
                     </h1>
                 </g:else>
@@ -315,7 +315,7 @@
                                             test="${fieldResult.count == (searchResults?.totalRecords ?: 0) && (grailsApplication.config.search?.hideFacetsThatDoNotFilterFurther == 'true')}">
                                     </g:elseif>
                                     <g:else>
-                                        <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
+                                        <li><a href="?${queryStringWithoutOffset}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
                                             <g:message code="${facetResult.fieldName}.${fieldResult.label}"
                                                        default="${fieldResult.label ?: "[unknown]"}"/>
                                         </a>
@@ -349,7 +349,7 @@
         <g:if test="${idxTypes.contains("TAXON") || (grailsApplication.config.nbn?.alwaysshowdownloadbutton?:'') == 'true'}">
             <div class="download-button pull-right">
                 <g:set var="downloadUrl"
-                       value="${grailsApplication.config.bie.index.url}/download?${request.queryString ?: ''}${((grailsApplication.config.bieService.queryContext?:'.').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
+                       value="${grailsApplication.config.bie.index.url}/download?${searchResultsQuery}${((grailsApplication.config.bieService.queryContext?:'.').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
                 <a class="btn btn-default active btn-small" href="${downloadUrl}"
                    title="Download a list of taxa for your search">
                     <i class="glyphicon glyphicon-download"></i>
@@ -470,37 +470,44 @@
                                             </div>
                                         </g:if>
 
-                                        <h3>${result.rank.capitalize()}:
+                                        <h3>
                                             <a href="${acceptedPageLink}"><bie:formatSciName rankId="${result.rankID}"
                                                                                              taxonomicStatus="${result.taxonomicStatus}"
                                                                                              nameFormatted="${result.nameFormatted}"
                                                                                              nameComplete="${result.nameComplete}"
                                                                                              name="${result.name}"
-                                                                                             acceptedName="${result.acceptedConceptName}"/></a><%--
-                                            --%><g:if test="${result.commonNameSingle}"><span
-                                                class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span></g:if>
+                                                                                             acceptedName="${result.acceptedConceptName}"/></a><!--
+                                            --><g:if test="${result.commonNameSingle}"><span
+                                                class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span></g:if><!--
+                                            --><g:if test="${result.establishmentMeans && ((result?.establishmentMeans?:'') == 'Non-native')}"><span
+                                                    class="establishmentMeans">&nbsp;non-native</span></g:if>
                                         </h3>
-
-                                        <g:if test="${result.has("taxonGroup_s") && result.taxonGroup_s}">
-                                            <p class="taxonGroup_s">${result.taxonGroup_s.capitalize()}</p>
+                                        <p class="taxonGroup_s">${result.rank.capitalize()}<!--
+                                     --><g:if test="${result.has("taxonGroup_s") && result.taxonGroup_s}"><!--
+                                         -->, ${result.taxonGroup_s.capitalize()}<!--
+                                    --></g:if><!--
+                                    --><g:if test="${result.has("habitat_m_s") && result.habitat_m_s}"><!--
+<                                        -->, ${result.habitat_m_s.join(', ').replaceAll("\"", "").capitalize()}
                                         </g:if>
-
-                                        <g:if test="${result.has("synonymComplete") && result.synonymComplete &&
-                                                result.synonymComplete.any{ it != result.name } && /* dont show naked name synonym */
-                                                result.synonymComplete.findAll{it != result.name}.any{ it.toLowerCase().contains(searchResults.queryTitle.toLowerCase()) } /* crude check if a synonym contains search term */ }">
-                                            <p class="alt-names">
-                                                ${raw(result.synonymCompleteHighlighted.findAll{it != result.name}.join(', ').replaceAll("\"", "")) /* use raw because synonymCompleteHighlighted contains html markup */}</p>
-                                        </g:if>
-
 
                                         <g:if test="${result.has("commonName") && result.commonName && result.commonName != result.commonNameSingle}">
                                             <p class="alt-names">
                                                 <g:set var="hasAtLeastOneNameListed" value="${false}"/>
                                                 <g:each var="cName"
-                                                    in="${result.commonName.split(",")}"
-                                                        status="counter"><g:if test="${cName.trim().toLowerCase() != result.commonNameSingle.toLowerCase()}"><g:if test="${counter && hasAtLeastOneNameListed}">, </g:if>${cName.trim()}<g:set var="hasAtLeastOneNameListed" value="${true}"/></g:if></g:each>
+                                                        in="${result.commonNameHighlighted.split(",")}"
+                                                        status="counter"><g:if test="${cName.trim().toLowerCase().replaceAll("<b>","").replaceAll("</b>","") != result.commonNameSingle.toLowerCase()}"><g:if test="${counter && hasAtLeastOneNameListed}">, </g:if>${raw(cName.trim())}<g:set var="hasAtLeastOneNameListed" value="${true}"/></g:if></g:each>
                                             </p>
                                         </g:if>
+
+                                        <g:if test="${result.has("synonymComplete") && result.synonymComplete &&
+                                                result.synonymComplete.any{ it != result.name } && /* dont show naked name synonym */
+                                                result.synonymComplete.findAll{it != result.name}.any{ it.toLowerCase().contains(searchResults.queryTitle.toLowerCase()) } /* crude check if a synonym contains search term */ }">
+                                            <p class="alt-names">Previous/synonymised names:
+                                                ${raw(result.synonymCompleteHighlighted.findAll{it != result.name}.join(', ').replaceAll("\"", "")) /* use raw because synonymCompleteHighlighted contains html markup */}</p>
+                                        </g:if>
+
+
+
 
                                         <g:if test="${taxonPageLink != acceptedPageLink}"><p
                                                 class="alt-names"></p></g:if>

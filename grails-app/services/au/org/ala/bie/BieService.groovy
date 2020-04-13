@@ -10,6 +10,8 @@ class BieService {
     def webService
     def grailsApplication
 
+    def queryUsedForResults = ""
+
     //legacy, not used
     def searchBie(SearchRequestParamsDTO requestObj) {
 
@@ -63,9 +65,11 @@ class BieService {
         if (resultsInThisPage > 0) {
                 //if +1 result might need to OR all of these together, but it could create some interesting results for naked names with different accepted entries with different authorities
                 //http://localhost:8080/search?fq=idxtype%3ATAXON&q=bird - only first (genus) has its child taxa included; so that would be a good test case
+            queryUsedForResults = "fq=" + matchFQ
             if (resJson.searchResults.results[0].rankID >= 5000 && resJson.searchResults.results[0].rankID < 8000) {
                 //family, genus and species taxonomic levels
-                def queryUrlFGSAndChildren = queryUrlWithoutQ + "&fq=taxonomicStatus:accepted&fq=%28" + matchFQ + "+OR+parentGuid:" + resJson.searchResults.results[0].guid + "%29"
+                def FQwithChildren = "&fq=taxonomicStatus:accepted&fq=%28" + matchFQ + "+OR+parentGuid:" + resJson.searchResults.results[0].guid + "%29"
+                def queryUrlFGSAndChildren = queryUrlWithoutQ + FQwithChildren
                 if (resJson.searchResults.results[0].rankID >= 5000 && resJson.searchResults.results[0].rankID < 6000) {
                     queryUrlFGSAndChildren = queryUrlFGSAndChildren.replace("&sort=", "&sort2=").replace("&dir=", "&dir2=") + "&sort=rankID&dir=ASC"
                 }
@@ -74,6 +78,7 @@ class BieService {
                 if (resJsonWithChild.searchResults?.totalRecords > 0) {
                     resJsonWithChild.searchResults.queryTitle = strOriginalQueryTerm
                     acceptableResults = resJsonWithChild
+                    queryUsedForResults = "fq=" + FQwithChildren
                 } else {
                     acceptableResults = resJson
                 }
@@ -82,7 +87,6 @@ class BieService {
             }
             haveAcceptableResults = true
         }
-
 
         if (haveAcceptableResults || booMatchFull || strTVK != '') { //don't try again
             acceptableResults
@@ -98,35 +102,39 @@ class BieService {
 
         def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
                 "&facets=" + grailsApplication.config.facets
-        queryUrl += "&q.op=OR"
 
         //add a query context for BIE - to reduce taxa to a subset
         if(grailsApplication.config.bieService.queryContext){
             queryUrl = queryUrl + "&" + URIUtil.encodeWithinQuery(grailsApplication.config.bieService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
         }
+        def queryParam = URIUtil.encodeWithinQuery(requestObj.q).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+        queryUrl = queryUrl.replaceAll('"','%22').replaceAll("'","%27")
 
         //add a query context for biocache - this will influence record counts
+        def queryContext = ""
         if (!overrideBiocacheContext) {
             if (grailsApplication.config.biocacheService.queryContext) {
                 //watch out for mutually exclusive conditions between queryContext and occFilter, e.g. if queryContext=occurrence_status:present and occFilter=occurrence_stats:absent then will get zero records returned
-                queryUrl = queryUrl + "&bqc=(" + URIUtil.encodeWithinQuery(grailsApplication.config.biocacheService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+                queryContext = "&bqc=(" + URIUtil.encodeWithinQuery(grailsApplication.config.biocacheService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 if (occFilter) {
-                    queryUrl = queryUrl + "%20AND%20" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+                    queryContext = queryContext + "%20AND%20" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 }
-                queryUrl = queryUrl + ")"
+                queryContext = queryContext + ")"
             } else {
                 if (occFilter) {
-                    queryUrl = queryUrl + "&bqc=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+                    queryContext = "&bqc=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
                 }
             }
         } else {
             if (occFilter) {
-                queryUrl = queryUrl + "&bqc=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":") + ")"
+                queryContext = "&bqc=(" + URIUtil.encodeWithinQuery(occFilter).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":") + ")"
             }
         }
+        queryUrl = queryUrl + queryContext
+        queryUsedForResults = "q=" + queryParam + queryContext
 
         log.info("queryUrlOccFilter = " + queryUrl)
-        def queryParam = URIUtil.encodeWithinQuery(requestObj.q).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+        log.info("queryUsedForResults = " + queryUsedForResults)
 
         def queryPage = requestObj.start?:0
 
@@ -142,7 +150,8 @@ class BieService {
 
         if (! haveAcceptableResults) {
             //try synonyms, exact match still
-            def queryUrlExactMatch = queryUrl + "&fq=scientific_name:%22" + queryParam + "%22"; //note scientific_name is case-insensitive and has various syntax chars removed for better matching
+            def synonymParam = "&fq=scientific_name:%22" + queryParam + "%22"
+            def queryUrlExactMatch = queryUrl + synonymParam //note scientific_name is case-insensitive and has various syntax chars removed for better matching
             def queryUrlExactMatchWithoutPage = queryUrlExactMatch.replace("start=" + queryPage,"start=0")
             def json = webService.get(queryUrlExactMatchWithoutPage)
             def resJson = JSON.parse(json)
@@ -166,7 +175,8 @@ class BieService {
         }
 
         if (! haveAcceptableResults) {
-            def queryUrlExactCommonName = queryUrl + "&fq=taxonomicStatus:accepted&fq=commonName:%22" + queryParam + "%22";
+            def commonParam = "&fq=taxonomicStatus:accepted&fq=commonName:%22" + queryParam + "%22"
+            def queryUrlExactCommonName = queryUrl + commonParam
             def queryUrlExactCommonNameWithoutPage = queryUrlExactCommonName.replace("start=" + queryPage,"start=0")
             def json = webService.get(queryUrlExactCommonNameWithoutPage)
             def resJson = JSON.parse(json)
@@ -174,13 +184,15 @@ class BieService {
             if (resultsInThisPage > 0) {
                 json = webService.get(queryUrlExactCommonName)
                 acceptableResults = JSON.parse(json)
+                queryUsedForResults = "q=" + queryParam + commonParam
                 haveAcceptableResults = true
             }
         }
 
 
         if (! haveAcceptableResults) {
-            def queryUrlAccepted = queryUrl + "&fq=taxonomicStatus:accepted"
+            def acceptedParam = "&fq=taxonomicStatus:accepted"
+            def queryUrlAccepted = queryUrl + acceptedParam
             def queryUrlAcceptedWithoutPage = queryUrlAccepted.replace("start=" + queryPage,"start=0")
             def json = webService.get(queryUrlAcceptedWithoutPage)
             def resJson = JSON.parse(json)
@@ -188,6 +200,7 @@ class BieService {
             if (resultsInThisPage > 0) {
                 json = webService.get(queryUrlAccepted)
                 acceptableResults = JSON.parse(json)
+                queryUsedForResults = "q=" + queryParam + acceptedParam
                 haveAcceptableResults = true
             }
         }
@@ -220,9 +233,29 @@ class BieService {
                 }
             }
             result.synonymCompleteHighlighted = synonymCompleteHighlighted
+
+            def commonNameHighlighted = []
+            if (result?.commonName) {
+                result.commonName.split(',').each {
+                    it = it.trim()
+                    def startPos = it.toLowerCase().indexOf(requestObj.q.toLowerCase())
+                    if (startPos >= 0) {
+                        def strStart = (startPos > 0 ? it.substring(0, startPos) : '')
+                        def strMatched = it.substring(startPos, startPos + requestObj.q.length())
+                        def strEnd = (it.length() > startPos + requestObj.q.length() ? it.substring(startPos + requestObj.q.length()) : '')
+                        commonNameHighlighted.add(strStart + "<b>" + strMatched + "</b>" + strEnd)
+                    } else {
+                        commonNameHighlighted.add(it)
+                    }
+                }
+            }
+            result.commonNameHighlighted = commonNameHighlighted.join(", ")
         }
 
-        acceptableResults
+        log.info("acceptableResults = ")
+        log.info(acceptableResults.toString())
+        log.info("queryUsedForResults = " + queryUsedForResults)
+        [acceptableResults, queryUsedForResults]
     }
 
     def getSpeciesList(guid){

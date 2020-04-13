@@ -125,16 +125,20 @@ class SpeciesController {
         log.info "SearchRequestParamsDTO = " + requestObj
         log.info "recordsFilter = " + recordsFilter
         //def searchResults = bieService.searchBie(requestObj)
-        def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)
+        //def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)
+        def searchResultsArr = bieService.searchBieOccFilter(requestObj, recordsFilter, true)
+        def searchResults = searchResultsArr[0]
+        def searchResultsQuery = searchResultsArr[1]
+        log.info("Actual query used: " + searchResultsQuery)
         def searchResultsPresence
         def searchResultsAbsence
         if ((grailsApplication.config?.search?.mapPresenceAndAbsence?:"") == "true") {
             if (grailsApplication.config?.biocacheService?.altQueryContext) {
-                searchResultsPresence = bieService.searchBieOccFilter(requestObj, recordsFilter + " AND " + "-occurrence_status:absent", true)
-                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, recordsFilter + " AND " + "occurrence_status:absent", true)
+                searchResultsPresence = bieService.searchBieOccFilter(requestObj, recordsFilter + " AND " + "-occurrence_status:absent", true)[0]
+                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, recordsFilter + " AND " + "occurrence_status:absent", true)[0]
             } else {
-                searchResultsPresence = bieService.searchBieOccFilter(requestObj, "-occurrence_status:absent", false)
-                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, "occurrence_status:absent", false)
+                searchResultsPresence = bieService.searchBieOccFilter(requestObj, "-occurrence_status:absent", false)[0]
+                searchResultsAbsence = bieService.searchBieOccFilter(requestObj, "occurrence_status:absent", false)[0]
             }
         }
 
@@ -185,12 +189,27 @@ class SpeciesController {
                 }
             }
 
+            log.info("**** = " + request.queryString)
+            def queryStringWithoutOffset = request.queryString?:"*:*"
+            def ixOffset = queryStringWithoutOffset.indexOf("offset=")
+            if (ixOffset >= 0) {
+                def strBefore = queryStringWithoutOffset.substring(0, ixOffset)
+                def strAfter = queryStringWithoutOffset.substring(ixOffset + "offset=".length())
+                def ixAfter = strAfter.indexOf("&")
+                queryStringWithoutOffset = strBefore
+                if (ixAfter >= 0) {
+                    queryStringWithoutOffset += strAfter.substring(ixAfter)
+                }
+            }
+
             render(view: 'search', model: [
                     searchResults: searchResults?.searchResults,
                     searchResultsPresence: searchResultsPresence?.searchResults,
                     searchResultsAbsence: searchResultsAbsence?.searchResults,
                     facetMap: utilityService.addFacetMap(filterQuery),
                     query: query?.trim(),
+                    queryStringWithoutOffset: queryStringWithoutOffset,
+                    searchResultsQuery: searchResultsQuery,
                     filterQuery: filterQuery,
                     idxTypes: utilityService.getIdxtypes(searchResults?.searchResults?.facetResults),
                     isAustralian: false,
@@ -385,7 +404,7 @@ class SpeciesController {
 
             def requestObj = new SearchRequestParamsDTO(query, filterQuery, 0, rowsMax, sortField, sortDirection)
             log.info "SearchRequestParamsDTO = " + requestObj
-            def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)
+            def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)[0]
 
             sr = searchResults?.searchResults
         } else {
