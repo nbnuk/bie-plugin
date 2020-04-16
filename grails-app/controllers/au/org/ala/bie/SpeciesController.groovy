@@ -87,12 +87,13 @@ class SpeciesController {
     }
 
     /**
-     * Search page - display search results fro the BIE (includes results for non-species pages too)
+     * Search page - display search results from the BIE (includes results for non-species pages too)
      */
     def search = {
         def query = params.q?:"".trim()
         if(query == "*") query = ""
         def filterQuery = params.list('fq') // will be a list even with only one value
+        def includeSynonyms = (params.includeSynonyms?:'off') == 'on'
         def startIndex = params.offset?:0
 
         def showAsCompact = (grailsApplication.config?.search?.compactResults ?: 'false').toBoolean()
@@ -121,7 +122,7 @@ class SpeciesController {
         }
         recordsFilter = getRecordsFilter()
 
-        def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection)
+        def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection, includeSynonyms)
         log.info "SearchRequestParamsDTO = " + requestObj
         log.info "recordsFilter = " + recordsFilter
         //def searchResults = bieService.searchBie(requestObj)
@@ -402,7 +403,9 @@ class SpeciesController {
                 sortField = "score" // default sort (field) of "score" when order is defined on its own
             }
 
-            def requestObj = new SearchRequestParamsDTO(query, filterQuery, 0, rowsMax, sortField, sortDirection)
+            def includeSynonyms = (params.includeSynonyms?:'off') == 'on'
+
+            def requestObj = new SearchRequestParamsDTO(query, filterQuery, 0, rowsMax, sortField, sortDirection, includeSynonyms)
             log.info "SearchRequestParamsDTO = " + requestObj
             def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)[0]
 

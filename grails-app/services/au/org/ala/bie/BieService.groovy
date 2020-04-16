@@ -144,7 +144,7 @@ class BieService {
 
         if (! haveAcceptableResults) {
             //try accepted, match without authority
-            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, queryPage, "", false, true, true)
+            acceptableResults = searchBieOnAcceptedNameOrTVK(queryUrl, requestObj.q, queryParam, queryPage, "", false, requestObj.includeSynonyms, true)
             if (acceptableResults?.searchResults) haveAcceptableResults = true
         }
 
@@ -215,25 +215,27 @@ class BieService {
         }
 
         //some horrible code to build fake-highlights into the synonym list
+
         acceptableResults?.searchResults?.results?.each { result ->
-            def synonymCompleteHighlighted = []
-            if (result?.synonymComplete) {
-                result.synonymComplete.each {
-                    if (it.toLowerCase() != result.name.toLowerCase()) { //exclude naked name synonyms
-                        def startPos = it.toLowerCase().indexOf(requestObj.q.toLowerCase())
-                        if (startPos >= 0) {
-                            def strStart = (startPos > 0 ? it.substring(0, startPos) : '')
-                            def strMatched = it.substring(startPos, startPos + requestObj.q.length())
-                            def strEnd = (it.length() > startPos + requestObj.q.length() ? it.substring(startPos + requestObj.q.length()) : '')
-                            synonymCompleteHighlighted.add(strStart + "<b>" + strMatched + "</b>" + strEnd)
-                        } else {
-                            synonymCompleteHighlighted.add(it)
+            if (requestObj.includeSynonyms) {
+                def synonymCompleteHighlighted = []
+                if (result?.synonymComplete) {
+                    result.synonymComplete.each {
+                        if (it.toLowerCase() != result.name.toLowerCase()) { //exclude naked name synonyms
+                            def startPos = it.toLowerCase().indexOf(requestObj.q.toLowerCase())
+                            if (startPos >= 0) {
+                                def strStart = (startPos > 0 ? it.substring(0, startPos) : '')
+                                def strMatched = it.substring(startPos, startPos + requestObj.q.length())
+                                def strEnd = (it.length() > startPos + requestObj.q.length() ? it.substring(startPos + requestObj.q.length()) : '')
+                                synonymCompleteHighlighted.add(strStart + "<b>" + strMatched + "</b>" + strEnd)
+                            } else {
+                                synonymCompleteHighlighted.add(it)
+                            }
                         }
                     }
                 }
+                result.synonymCompleteHighlighted = synonymCompleteHighlighted
             }
-            result.synonymCompleteHighlighted = synonymCompleteHighlighted
-
             def commonNameHighlighted = []
             if (result?.commonName) {
                 result.commonName.split(',').each {

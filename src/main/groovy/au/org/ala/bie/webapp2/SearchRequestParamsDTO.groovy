@@ -29,14 +29,16 @@ class SearchRequestParamsDTO {
     def rows
     def sort
     def dir
+    def includeSynonyms
 
-    SearchRequestParamsDTO(q, fq, start, rows, sort, dir) {
+    SearchRequestParamsDTO(q, fq, start, rows, sort, dir, includeSynonyms) {
         this.q = q
         this.fq = fq
         this.start = start
         this.rows = rows
         this.sort = sort
         this.dir = dir
+        this.includeSynonyms = includeSynonyms
     }
 
     def getQueryString() {
