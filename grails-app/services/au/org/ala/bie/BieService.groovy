@@ -43,7 +43,8 @@ class BieService {
     //booAllowCommonMatch: allow matching against common name of entry
     //only works for family, genus, species (defined by rankID so can accommodate subgenus, etc.), not higher taxonomies
     def searchBieOnAcceptedNameOrTVK(wsQueryUrl, strOriginalQueryTerm, strName, intPage, strTVK, booMatchFull, booAllowSynonymMatch, booAllowCommonMatch) {
-        def queryUrlWithoutQ = wsQueryUrl.replace("?q=" + strOriginalQueryTerm,"?q=*:*")
+        def strOriginalQueryTermEncoded = URIUtil.encodeWithinQuery(strOriginalQueryTerm).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+        def queryUrlWithoutQ = wsQueryUrl.replace("?q=" + strOriginalQueryTermEncoded,"?q=*:*")
         def queryUrlWithoutQandPage = queryUrlWithoutQ.replace("start=" + intPage,"start=0")
         //def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'nameComplete' : 'scientificName'))
         def matchAgainst = (strTVK != ''? 'guid' : (booMatchFull? 'name_complete' : 'scientific_name'))

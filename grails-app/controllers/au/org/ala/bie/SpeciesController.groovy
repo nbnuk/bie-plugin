@@ -93,7 +93,7 @@ class SpeciesController {
         def query = params.q?:"".trim()
         if(query == "*") query = ""
         def filterQuery = params.list('fq') // will be a list even with only one value
-        def includeSynonyms = (params.includeSynonyms?:'off') == 'on'
+        def includeSynonyms = (params.includeSynonyms?:'on') == 'on'
         def startIndex = params.offset?:0
 
         def showAsCompact = (grailsApplication.config?.search?.compactResults ?: 'false').toBoolean()
@@ -212,6 +212,7 @@ class SpeciesController {
                     queryStringWithoutOffset: queryStringWithoutOffset,
                     searchResultsQuery: searchResultsQuery,
                     filterQuery: filterQuery,
+                    includeSynonyms: includeSynonyms,
                     idxTypes: utilityService.getIdxtypes(searchResults?.searchResults?.facetResults),
                     isAustralian: false,
                     collectionsMap: utilityService.addFqUidMap(filterQuery),

@@ -271,6 +271,15 @@
                     </div>
                 </g:if>
 
+                <div class="refine-list" id="facet-includeSynonyms">
+                    <h3>Synonym matches</h3>
+                    <g:if test="${includeSynonyms}">
+                        <a href="?${queryParam}${appendQueryParam}&includeSynonyms=off">Exclude synonym matches</a>
+                    </g:if>
+                    <g:else>
+                        <a href="?${queryParam}${appendQueryParam}&includeSynonyms=on">Include synonym matches</a>
+                    </g:else>
+                </div>
                 <!-- facets -->
 
                 <g:each var="facetResult" in="${searchResults.facetResults}">
