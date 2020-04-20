@@ -91,7 +91,7 @@ class SpeciesController {
      */
     def search = {
         def query = params.q?:"".trim()
-        if(query == "*") query = ""
+        if(query == "*" || query == "") query = "*:*"
         def filterQuery = params.list('fq') // will be a list even with only one value
         def includeSynonyms = (params.includeSynonyms?:'on') == 'on'
         def startIndex = params.offset?:0
@@ -153,7 +153,7 @@ class SpeciesController {
         }
 
         // empty search -> search for all records
-        if (query.isEmpty()) {
+        if (query.isEmpty() || query == "") {
             //render(view: '../error', model: [message: "No search term specified"])
             query = "*:*";
         }

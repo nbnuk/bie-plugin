@@ -88,7 +88,7 @@
                 </g:elseif>
                 <g:else>
                     <h1>
-                        Search for <strong>${searchResults.queryTitle != "*:*" ? searchResults.queryTitle : (query? query : 'everything')}</strong>
+                        Search for <strong>${searchResults.queryTitle != "*:*"? searchResults.queryTitle : 'everything'}</strong>
                         returned <g:formatNumber number="${searchResults.totalRecords}" type="number"/>
                         <g:if test="${filterQuery.contains("idxtype:TAXON")}">
                             <g:if test="${searchResults.totalRecords != 1}">
@@ -270,7 +270,7 @@
                         </ul>
                     </div>
                 </g:if>
-
+                <g:if test="${!query.isEmpty() && query != "*:*"}">
                 <div class="refine-list" id="facet-includeSynonyms">
                     <h3>Synonym matches</h3>
                     <g:if test="${includeSynonyms}">
@@ -280,6 +280,7 @@
                         <a href="?${queryParam}${appendQueryParam}&includeSynonyms=on">Include synonym matches</a>
                     </g:else>
                 </div>
+                </g:if>
                 <!-- facets -->
 
                 <g:each var="facetResult" in="${searchResults.facetResults}">
