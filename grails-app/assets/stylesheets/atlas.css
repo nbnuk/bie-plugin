@@ -310,3 +310,11 @@ html, body {height:100%;}
     font-weight: bold;
     font-size: 20px;
 }
+
+.alt-names {
+    margin: 0px 0px 0px 0px;
+}
+
+.establishmentMeans {
+    font-variant: small-caps;
+}

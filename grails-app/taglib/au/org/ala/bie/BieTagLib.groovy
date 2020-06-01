@@ -255,7 +255,7 @@ class BieTagLib {
         if (rankId <= 4400)
             return "order"
         if (rankId <= 5700)
-            return "famnily"
+            return "family"
         if (rankId < 7000)
             return "genus"
         if (rankId < 8000)

@@ -18,7 +18,7 @@ $(document).ready(function () {
         if (list && list.length){
             list.forEach(function (item) {
                 var name = getMatchingName(item);
-                results.push({label: name, value: name});
+                results.push({label: name, value: item.guid});
             })
         }
 
@@ -37,6 +37,10 @@ $("#search").autocomplete({
                     response( formatAutocompleteList(data.autoCompleteList) );
                 }
             } );
+        },
+        select: function( event, ui ) {
+            window.location.href = '/species/' + ui.item.value;
+            return false;
         }
     }, $(":input#autocompleteResultPage, :input#search"));
 });

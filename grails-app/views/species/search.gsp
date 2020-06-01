@@ -15,6 +15,7 @@
 <%@ page import="au.org.ala.bie.BieTagLib" contentType="text/html;charset=UTF-8" %>
 <g:set var="alaUrl" value="${grailsApplication.config.ala.baseURL}"/>
 <g:set var="biocacheUrl" value="${grailsApplication.config.biocache.baseURL}"/>
+<g:set var="filterQueryString" value="${!filterQuery.isEmpty()? '&fq=' + filterQuery?.join("&fq=") : ''}"/>
 <!doctype html>
 <html>
 <head>
@@ -87,9 +88,19 @@
                 </g:elseif>
                 <g:else>
                     <h1>
-                        Search for <strong>${searchResults.queryTitle == "*:*" ? 'everything' : searchResults.queryTitle}</strong>
+                        Search for <strong>${searchResults.queryTitle != "*:*"? searchResults.queryTitle : 'everything'}</strong>
                         returned <g:formatNumber number="${searchResults.totalRecords}" type="number"/>
-                        results.
+                        <g:if test="${filterQuery.contains("idxtype:TAXON")}">
+                            <g:if test="${searchResults.totalRecords != 1}">
+                                taxa
+                            </g:if>
+                            <g:else>
+                                taxon
+                            </g:else>
+                        </g:if>
+                        <g:else>
+                            results
+                        </g:else>
                     </h1>
                 </g:else>
             </div>
@@ -259,7 +270,17 @@
                         </ul>
                     </div>
                 </g:if>
-
+                <g:if test="${!query.isEmpty() && query != "*:*"}">
+                <div class="refine-list" id="facet-includeSynonyms">
+                    <h3>Synonym matches</h3>
+                    <g:if test="${includeSynonyms}">
+                        <a href="?${queryParam}${appendQueryParam}&includeSynonyms=off">Exclude synonym matches</a>
+                    </g:if>
+                    <g:else>
+                        <a href="?${queryParam}${appendQueryParam}&includeSynonyms=on">Include synonym matches</a>
+                    </g:else>
+                </div>
+                </g:if>
                 <!-- facets -->
 
                 <g:each var="facetResult" in="${searchResults.facetResults}">
@@ -305,7 +326,7 @@
                                             test="${fieldResult.count == (searchResults?.totalRecords ?: 0) && (grailsApplication.config.search?.hideFacetsThatDoNotFilterFurther == 'true')}">
                                     </g:elseif>
                                     <g:else>
-                                        <li><a href="?${request.queryString}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
+                                        <li><a href="?${queryStringWithoutOffset}&fq=${facetResult.fieldName}:%22${fieldResult.label}%22">
                                             <g:message code="${facetResult.fieldName}.${fieldResult.label}"
                                                        default="${fieldResult.label ?: "[unknown]"}"/>
                                         </a>
@@ -339,7 +360,7 @@
         <g:if test="${idxTypes.contains("TAXON") || (grailsApplication.config.nbn?.alwaysshowdownloadbutton?:'') == 'true'}">
             <div class="download-button pull-right">
                 <g:set var="downloadUrl"
-                       value="${grailsApplication.config.bie.index.url}/download?${request.queryString ?: ''}${((grailsApplication.config.bieService.queryContext?:'.').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
+                       value="${grailsApplication.config.bie.index.url}/download?${searchResultsQuery}${filterQueryString}${((grailsApplication.config.bieService.queryContext?:'.').substring(0,1) != '&') ? "&" : "" }${grailsApplication.config.bieService.queryContext}"/>
                 <a class="btn btn-default active btn-small" href="${downloadUrl}"
                    title="Download a list of taxa for your search">
                     <i class="glyphicon glyphicon-download"></i>
@@ -376,7 +397,7 @@
                             <div class="form-group">
                                 <label for="sort-by">Sort by</label>
                                 <select class="form-control input-sm" id="sort-by" name="sort-by">
-                                    <option value="score" ${(params.sortField == 'score' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'score')) ? "selected=\"selected\"" : ""}>best match</option>
+                                    <!-- <option value="score" ${(params.sortField == 'score' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'score')) ? "selected=\"selected\"" : ""}>best match</option> -->
                                     <option value="scientificName" ${(params.sortField == 'scientificName' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'scientificName')) ? "selected=\"selected\"" : ""}>scientific name</option>
                                     <option value="commonNameSingle" ${(params.sortField == 'commonNameSingle' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'commonNameSingle')) ? "selected=\"selected\"" : ""}>common name</option>
                                     <option value="rank" ${(params.sortField == 'rank' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'rank')) ? "selected=\"selected\"" : ""}>taxon rank</option>
@@ -460,19 +481,44 @@
                                             </div>
                                         </g:if>
 
-                                        <h3>${result.rank}:
+                                        <h3>
                                             <a href="${acceptedPageLink}"><bie:formatSciName rankId="${result.rankID}"
                                                                                              taxonomicStatus="${result.taxonomicStatus}"
                                                                                              nameFormatted="${result.nameFormatted}"
                                                                                              nameComplete="${result.nameComplete}"
                                                                                              name="${result.name}"
-                                                                                             acceptedName="${result.acceptedConceptName}"/></a><%--
-                                            --%><g:if test="${result.commonNameSingle}"><span
-                                                class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span></g:if>
+                                                                                             acceptedName="${result.acceptedConceptName}"/></a><!--
+                                            --><g:if test="${result.commonNameSingle}"><span
+                                                class="commonNameSummary">&nbsp;&ndash;&nbsp;${result.commonNameSingle}</span></g:if><!--
+                                            --><g:if test="${result.establishmentMeans && ((result?.establishmentMeans?:'') == 'Non-native')}"><span
+                                                    class="establishmentMeans">&nbsp;non-native</span></g:if>
                                         </h3>
+                                        <p class="taxonGroup_s">${result.rank.capitalize()}<!--
+                                     --><g:if test="${result.has("taxonGroup_s") && result.taxonGroup_s}"><!--
+                                         -->, ${result.taxonGroup_s.capitalize()}<!--
+                                    --></g:if><!--
+                                    --><g:if test="${result.has("habitat_m_s") && result.habitat_m_s}"><!--
+<                                        -->, ${result.habitat_m_s.join(', ').replaceAll("\"", "").capitalize()}
+                                        </g:if>
 
-                                        <g:if test="${result.commonName != result.commonNameSingle}"><p
-                                                class="alt-names">${result.commonName}</p></g:if>
+                                        <g:if test="${result.has("commonName") && result.commonName && result.commonName != result.commonNameSingle}">
+                                            <p class="alt-names">
+                                                <g:set var="hasAtLeastOneNameListed" value="${false}"/>
+                                                <g:each var="cName"
+                                                        in="${result.commonNameHighlighted.split(",")}"
+                                                        status="counter"><g:if test="${cName.trim().toLowerCase().replaceAll("<b>","").replaceAll("</b>","") != result.commonNameSingle.toLowerCase()}"><g:if test="${counter && hasAtLeastOneNameListed}">, </g:if>${raw(cName.trim())}<g:set var="hasAtLeastOneNameListed" value="${true}"/></g:if></g:each>
+                                            </p>
+                                        </g:if>
+
+                                        <g:if test="${result.has("synonymComplete") && result.synonymComplete &&
+                                                result.synonymComplete.any{ it != result.name } && /* dont show naked name synonym */
+                                                result.synonymComplete.findAll{it != result.name}.any{ it.toLowerCase().contains(searchResults.queryTitle.toLowerCase()) } /* crude check if a synonym contains search term */ }">
+                                            <p class="alt-names">Previous/synonymised names:
+                                                ${raw(result.synonymCompleteHighlighted.findAll{it != result.name}.join(', ').replaceAll("\"", "")) /* use raw because synonymCompleteHighlighted contains html markup */}</p>
+                                        </g:if>
+
+
+
 
                                         <g:if test="${taxonPageLink != acceptedPageLink}"><p
                                                 class="alt-names"></p></g:if>
@@ -561,7 +607,7 @@
                                             <span class="searchDescription">${result.description?.trimLength(500)}</span>
                                         </p>
                                     </g:elseif>
-                                    <g:elseif test="${result.has("highlight") && result.get("highlight")}">
+                                    <g:elseif test="${result.has("highlight") && result.get("highlight") && false /* hidden for now */}">
                                         <h4><g:message code="idxtype.${result.idxtype}"/>:
                                             <a href="${result.guid}">${result.name}</a></h4>
 
@@ -573,7 +619,7 @@
                                         <h4><g:message code="idxtype.${result.idxtype}"/> TEST: <a
                                                 href="${result.guid}">${result.name}</a></h4>
                                     </g:else>
-                                    <g:if test="${result.has("highlight")}">
+                                    <g:if test="${result.has("highlight") && false /* hidden for now */}">
                                         <p><bie:displaySearchHighlights highlight="${result.highlight}"/></p>
                                     </g:if>
                                     <g:if test="${result.has("idxtype") && result.idxtype == 'TAXON'}">
