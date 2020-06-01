@@ -116,9 +116,20 @@ class SpeciesController {
         if (params.dir && !params.sortField) {
             sortField = "score" // default sort (field) of "score" when order is defined on its own
         }
+        def compactHeader
         if (showAsCompact) {
             sortField = 'scientificName' //hardcoded
             sortDirection = 'asc'
+
+            if (grailsApplication.config?.search?.compact?.headers?:"") {
+                def jsonSlurper = new JsonSlurper()
+                def compactHeaders = jsonSlurper.parseText((grailsApplication.config?.search?.compact?.headers ?: "[]"))
+                compactHeaders.each { listHeader ->
+                    if (filterQuery.contains("listMembership_m_s:\"" + listHeader.list + "\"")) {
+                        compactHeader = listHeader.header_html
+                    }
+                }
+            }
         }
         recordsFilter = getRecordsFilter()
 
@@ -190,7 +201,7 @@ class SpeciesController {
                 }
             }
 
-            log.info("**** = " + request.queryString)
+
             def queryStringWithoutOffset = request.queryString?:"*:*"
             def ixOffset = queryStringWithoutOffset.indexOf("offset=")
             if (ixOffset >= 0) {
@@ -225,6 +236,7 @@ class SpeciesController {
                     recordsFilterToggle: params.includeRecordsFilter ?: "",
                     recordsFilter: recordsFilter,
                     compactResults: showAsCompact,
+                    compactHeader: compactHeader,
                     pageGroups: pageGroups,
                     pageGroupBy: grailsApplication.config?.search?.compactResultsGroupBy ?: '',
                     compactResultsRemoveFacets: (grailsApplication.config?.search?.compactResultsRemoveFacets ?: 'false').toBoolean(),

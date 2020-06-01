@@ -67,24 +67,8 @@
                         By accessing records via the web service users accept that any <a title="data license" href="https://docs.nbnatlas.org/data-licenses/">CC-BY-NC</a> licenced records must not be used for commercial purposes without the permission of the data provider and all data providers must be acknowledged as required.
                     </small>
                 </g:if>
-                <g:elseif test="${(grailsApplication.config?.nbn?.region?:"") == 'Northern Ireland' && compactResults}">
-                    <g:if test="${filterQuery.contains("listMembership_m_s:\"Northern Ireland Priority Species\"") /* TODO: refactor this into config */}">
-                    <h1>NI Priority Species</h1>
-                    <p>Priority species require conservation action because of their decline, rarity and importance in an all-Ireland and UK context. During the preparation of the Northern Ireland Biodiversity Strategy (2002) an initial list of 271 Northern Ireland Priority Species requiring conservation action was identified. A more comprehensive list of Northern Ireland Priority Species was later published in March 2004.</p>
-                    <p>In 2007 the Northern Ireland Priority Species was reviewed to include UK priority species occurring in Northern Ireland as well as threatened Irish species and species requiring conservation action. The new Northern Ireland Priority Species list stands at 481 species, an increase from 271 on the original list. There is currently a further review of this Northern Ireland Priority Species list planned for completion 2019.</p>
-                    <p>Further information can be found <a href="http://www.habitas.org.uk/priority/intro.html">here</a>.</p>
-                    </g:if>
-                    <g:elseif test="${filterQuery.contains("listMembership_m_s:\"Non-native species of interest to Northern Ireland\"")}">
-                        <h1>Invasive Species</h1>
-                        <p>If you have seen an invasive species within Northern Ireland please submit your record to <a href="https://www2.habitas.org.uk/records/ISI">CEDaR Online Recording</a>.</p>
-                        <p>Submission of your record will send an immediate alert to a team of experts who will verify the record and take appropriate action.</p>
-                        <p>For further information on invasive species in Northern Ireland, including species range, policy related to individual species or species groups and action plans for species that threaten the biodiversity and economy of Northern Ireland, visit <a href="http://invasivespeciesireland.com" title="Invasive Species Ireland" target="_new">Invasive Species Ireland</a>.</p>
-                    </g:elseif>
-                    <g:elseif test="${filterQuery.contains("listMembership_m_s:\"Northern Ireland Environment Agency - Sensitive species Northern Ireland\"")}">
-                        <h1>Sensitive Species</h1>
-                        <p>Environmentally sensitive information is any which, if released to the public, would result in an ‘adverse effect’ on a feature of the environment. The list of species considered as sensitive in Northern Ireland has been compiled by the Northern Ireland Environment Agency (NIEA) considering threats such as disturbance, egg collection, commercial fishing, collecting, physical harm, destruction or damage of roosts, persecution, etc. This list will be periodically reviewed both by NBN Trust and NIEA.</p>
-                        <p>All data supplied to the NBN Atlas are displayed at the spatial resolution submitted by data providers, except records of species on the NBN Atlas sensitive species lists. Sensitive species records will be only available publicly on the NBN Atlas (to view or download) at the spatial resolution detailed on the sensitive species list (a resolution at which the risk of harm to a species is considered acceptable) Date information will also be reduced in quality to prevent location information being inferred through a common recorder name and date of survey. Access to higher resolution sensitive species records will be available via the NBN Atlas upon request, provided approval from the data partner is granted.</p>
-                    </g:elseif>
+                <g:elseif test="${compactResults}">
+                    ${raw(compactHeader)}
                 </g:elseif>
                 <g:else>
                     <h1>
