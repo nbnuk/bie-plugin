@@ -35,8 +35,17 @@ class ExternalSiteController {
     def index() {}
 
     def eol = {
-        eolRateLimiter.acquire()
+
         String jsonOutput = "{}" // default is empty JSON object
+
+        //Load GUID blacklist from line-separated file
+        String[] blacklist = new File("/data/nbn-bie/config/eol_blacklist.list")
+        if(blacklist.contains(params.guid)){
+            //Return no content
+            return jsonOutput
+        }
+
+        eolRateLimiter.acquire()
         def nameEncoded = URLEncoder.encode(params.s, 'UTF-8')
         def filterString  = URLEncoder.encode(params.f ?: '', 'UTF-8')
         String search = grailsApplication.config.external.eol.search.service

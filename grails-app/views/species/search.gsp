@@ -619,9 +619,9 @@
                                             </g:if>
                                             <g:if test="${grailsApplication.config.occurrenceCounts.enabled.toBoolean() && (result?.occurrenceCount ?: 0 > 0 || grailsApplication.config?.search?.showZeroOccurrences == "true")}">
                                                 <li>
-                                                    <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}&fq=${recordsFilter}">Occurrences:
-                                                        <g:formatNumber number="${result.occurrenceCount ?: 0}"
-                                                                        type="number"/></a>
+                                                    <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}&fq=${recordsFilter}">
+                                                        Occurrences: <g:formatNumber number="${result.occurrenceCount ?: 0}" type="number"/>
+                                                    </a>
                                                 </li>
                                             </g:if>
                                             <g:if test="${result.acceptedConceptID && result.acceptedConceptID != result.guid}">
