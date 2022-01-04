@@ -72,19 +72,18 @@
                 </g:elseif>
                 <g:else>
                     <h1>
-                        Search for <strong>${searchResults.queryTitle != "*:*"? searchResults.queryTitle : 'everything'}</strong>
-                        returned <g:formatNumber number="${searchResults.totalRecords}" type="number"/>
-                        <g:if test="${filterQuery.contains("idxtype:TAXON")}">
-                            <g:if test="${searchResults.totalRecords != 1}">
-                                taxa
-                            </g:if>
-                            <g:else>
-                                taxon
-                            </g:else>
-                        </g:if>
-                        <g:else>
-                            results
-                        </g:else>
+                        <g:message code="search.searchForReturned" args="[searchResults.queryTitle,searchResults.totalRecords]"/>
+%{--                        <g:if test="${filterQuery.contains("idxtype:TAXON")}">--}%
+%{--                            <g:if test="${searchResults.totalRecords != 1}">--}%
+%{--                                taxa--}%
+%{--                            </g:if>--}%
+%{--                            <g:else>--}%
+%{--                                taxon--}%
+%{--                            </g:else>--}%
+%{--                        </g:if>--}%
+%{--                        <g:else>--}%
+%{--                            results--}%
+%{--                        </g:else>--}%
                     </h1>
                 </g:else>
             </div>
@@ -219,7 +218,7 @@
                     <div class="col-sm-3">
 
                         <div class="well refine-box">
-                            <h2 class="hidden-xs">Refine results</h2>
+                            <h2 class="hidden-xs"><g:message code="search.refineResults" default="Refine Results" /></h2>
                             <h2 class="visible-xs"><a href="#refine-options" data-toggle="collapse"><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span> Refine results</a>
                             </h2>
 
@@ -234,7 +233,7 @@
                 </g:else>
                 <g:if test="${facetMap}">
                     <div class="current-filters" id="currentFilters">
-                        <h3>Current filters</h3>
+                        <h3><g:message code="search.currentFilters" default="Current filters" /></h3>
                         <ul class="list-unstyled">
                             <g:each var="item" in="${facetMap}" status="facetIdx">
                                 <li>
@@ -256,7 +255,7 @@
                 </g:if>
                 <g:if test="${!query.isEmpty() && query != "*:*"}">
                 <div class="refine-list" id="facet-includeSynonyms">
-                    <h3>Synonym matches</h3>
+                    <h3><g:message code="search.synonymMatches" default="Synonym matches" /></h3>
                     <g:if test="${includeSynonyms}">
                         <a href="?${queryParam}${appendQueryParam}&includeSynonyms=off">Exclude synonym matches</a>
                     </g:if>
@@ -348,7 +347,7 @@
                 <a class="btn btn-default active btn-small" href="${downloadUrl}"
                    title="Download a list of taxa for your search">
                     <i class="glyphicon glyphicon-download"></i>
-                    Download
+                    <g:message code="search.download" default="Download" />
                 </a>
             </div>
         </g:if>
@@ -364,12 +363,15 @@
         </g:if>
                     <g:if test="${!compactResults}">
                       <div class="result-options">
-                        <span class="record-cursor-details">Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> <g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">taxa</g:if><g:else>results</g:else></span>
+                        <span class="record-cursor-details">
+                           %{--    TODO: g:message properly           Showing <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> of <b>${searchResults?.totalRecords}</b> <g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">taxa</g:if><g:else>results</g:else></span>--}%
+                           <g:message code="search.showing" /> <b>${(params.offset ?: 0).toInteger() + 1} - ${Math.min((params.offset ?: 0).toInteger() + (params.rows ?: (grailsApplication.config?.search?.defaultRows ?: 10)).toInteger(), (searchResults?.totalRecords ?: 0))}</b> <g:message code="search.of" default="of" /> <b>${searchResults?.totalRecords}</b> <g:message code="search.results" default="results" />
 
 
-                        <form class="form-inline">
+                            <form class="form-inline">
                             <div class="form-group">
-                                <label for="per-page"><g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">Taxa</g:if><g:else>Results</g:else> per page</label>
+%{-- TODO: g:message properly                               <label for="per-page"><g:if test="${grailsApplication.config?.nbn?.inns == 'true'}">Taxa</g:if><g:else>Results</g:else> per page</label>--}%
+                                <label for="per-page"><g:message code="search.resultsPerPage" default="Results per page" /></label>
                                 <select class="form-control input-sm" id="per-page" name="per-page">
                                     <option value="10" ${(params.rows == '10' || (!params.rows && grailsApplication.config?.search?.defaultRows == '10')) ? "selected=\"selected\"" : ""}>10</option>
                                     <option value="20" ${(params.rows == '20' || (!params.rows && grailsApplication.config?.search?.defaultRows == '20')) ? "selected=\"selected\"" : ""}>20</option>
@@ -379,7 +381,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="sort-by">Sort by</label>
+                                <label for="sort-by"><g:message code="search.sortBy" default="Sort by" /></label>
                                 <select class="form-control input-sm" id="sort-by" name="sort-by">
                                     <!-- <option value="score" ${(params.sortField == 'score' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'score')) ? "selected=\"selected\"" : ""}>best match</option> -->
                                     <option value="scientificName" ${(params.sortField == 'scientificName' || (!params.sortField && grailsApplication.config?.search?.defaultSortField == 'scientificName')) ? "selected=\"selected\"" : ""}>scientific name</option>
@@ -391,7 +393,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="sort-order">Sort order</label>
+                                <label for="sort-order"><g:message code="search.sortOrder" default="Sort order" /></label>
                                 <select class="form-control input-sm" id="sort-order" name="sort-order">
                                     <option value="asc" ${(params.dir == 'asc' || (!params.dir && grailsApplication.config?.search?.defaultSortOrder == 'asc')) ? "selected=\"selected\"" : ""}>ascending</option>
                                     <option value="desc" ${(params.dir == 'desc' || (!params.dir && grailsApplication.config?.search?.defaultSortOrder == 'desc') || (!params.dir && !grailsApplication.config?.search?.defaultSortOrder)) ? "selected=\"selected\"" : ""}>descending</option>
@@ -610,7 +612,7 @@
                                         <ul class="summary-actions list-inline">
                                             <g:if test="${result.rankID < 7000}">
                                                 <li><g:link controller="species" action="imageSearch"
-                                                            params="[id: result.guid]">View images of species within this ${result.rank}</g:link></li>
+                                                            params="[id: result.guid]"><g:message code="search.viewImages" args="[result.rank]"/></g:link></li>
                                             </g:if>
 
                                             <g:if test="${grailsApplication.config.sightings.guidUrl}">
@@ -619,7 +621,7 @@
                                             </g:if>
                                             <g:if test="${grailsApplication.config.occurrenceCounts.enabled.toBoolean() && (result?.occurrenceCount ?: 0 > 0 || grailsApplication.config?.search?.showZeroOccurrences == "true")}">
                                                 <li>
-                                                    <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}&fq=${recordsFilter}">Occurrences:
+                                                    <a href="${biocacheUrl}/occurrences/search?q=lsid:${result.guid}&fq=${recordsFilter}"><g:message code="search.occurrences" default="Occurrences" />
                                                         <g:formatNumber number="${result.occurrenceCount ?: 0}"
                                                                         type="number"/></a>
                                                 </li>
