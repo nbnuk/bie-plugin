@@ -1,5 +1,4 @@
-###    [![Build Status](https://travis-ci.org/nbnuk/bie-plugin.svg?branch=master)](https://travis-ci.org/nbnuk/bie-plugin)
-
+###    [![Build Status](https://travis-ci.com/nbnuk/bie-plugin.svg?branch=master)](https://travis-ci.com/github/nbnuk/bie-plugin)
 ### Languages
 
 The bie-plugin uses ISO-639 language codes, particularly ISO-639-3, drawn from http://www.sil.org/iso639-3/
