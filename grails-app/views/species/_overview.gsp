@@ -39,16 +39,8 @@
                                 <li>
                                     <g:if test="${cs.value.dr}">
                                         <a href="${collectoryUrl}/public/show/${cs.value.dr}"><span
-                                            class="iucn <bie:colourForStatus
-                                                    status="${cs.value.status}"/>">${cs.key}</span>
-                                        <g:if test="${cs.value.status instanceof Collection}">
-                                            <g:each var="csVal" in="${cs.value.status}">
-                                                ${csVal}<br/>
-                                            </g:each>
-                                        </g:if>
-                                        <g:else>
-                                            ${cs.value.status}
-                                        </g:else>
+                                                class="iucn <bie:colourForStatus
+                                                        status="${cs.value.status}"/>">${cs.key}</span>${cs.value.status}
                                         <!-- cs = ${cs} -->
                                         </a>
                                     </g:if>
@@ -82,47 +74,15 @@
         <div class="col-md-6">
             <div id="expertDistroDiv" style="display:none;margin-bottom: 20px;">
                 <h3>Compiled distribution map</h3>
-
                 <img id="distroMapImage" src="${resource(dir: 'images', file: 'noImage.jpg')}" class="distroImg" style="width:316px;" alt="occurrence map" onerror="this.style.display='none'"/>
                 <p class="mapAttribution">Compiled distribution map provided by <span id="dataResource">[data resource not known]</span></p>
             </div>
-            <g:if test="${grailsApplication.config.species?.mapResults == 'true'}">
             <div class="taxon-map">
-                <h3><span id="occurrenceRecordCount">[counting]</span> records
-                    <span id="occurrenceRecordCountAll"></span>
-                    <g:if test="${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'}">
-                        <span class="map-pa-container">
-                            <div id="map-pa-switch" class="map-pa-switch">
-                                <input type="radio" class="map-pa-switch-input" name="toggle" value="presence" id="map-pa-presence" checked>
-                                <label for="map-pa-presence" class="map-pa-switch-label map-pa-switch-label-off">Presence</label>
-                                <input type="radio" class="map-pa-switch-input" name="toggle" value="absence" id="map-pa-absence">
-                                <label for="map-pa-absence" class="map-pa-switch-label map-pa-switch-label-on">Absence</label>
-                                <span class="map-pa-switch-selection"></span>
-                            </div>
-                        </span>
-                    </g:if>
-                </h3>
-                <g:if test="${message(code:'overview.map.button.records.map.subtitle', default:'')}">
-                    <p>${g.message(code:'overview.map.button.records.map.subtitle')}</p>
-                </g:if>
+                <h3>Occurrence records map (<span class="occurrenceRecordCount">0</span> records)</h3>
                 <div id="leafletMap"></div>
-                <!-- for legend display, if needed -->
-                <div id="template" style="display:none">
-                    <div class="colourbyTemplate">
-                        <a class="colour-by-legend-toggle colour-by-control tooltips" href="#" title="Map legend - click to expand"><i class="fa fa-list-ul fa-lg" style="color:#333"></i></a>
-                        <form class="leaflet-control-layers-list">
-                            <div class="leaflet-control-layers-overlays">
-                                <div style="overflow:auto;max-height:400px;">
-                                    <a href="#" class="hideColourControl pull-right" style="padding-left:10px;"><i class="glyphicon glyphicon-remove" style="color:#333"></i></a>
-                                    <table class="legendTable"></table>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
                 <g:if test="${grailsApplication.config.spatial.baseURL}">
-                    <g:set var="mapUrl">${grailsApplication.config.spatial.baseURL}?fq=${grailsApplication.config.additionalMapFilter? '(': ''}lsid:${tc?.taxonConcept?.guid}${grailsApplication.config.additionalMapFilter? grailsApplication.config.additionalMapFilter.replace('&fq=',' AND ') + ')' : ''}</g:set>
+                    <g:set var="mapUrl">${grailsApplication.config.spatial.baseURL}?q=lsid:${tc?.taxonConcept?.guid}</g:set>
                 </g:if>
                 <g:else>
                     <g:set var="mapUrl">${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}#tab_mapView</g:set>
@@ -130,23 +90,21 @@
 
                 <div class="map-buttons">
                     <a class="btn btn-primary btn-lg"
-                       href="${mapUrl}${recordsFilterToggle? "&fq="+recordsFilter : ""}"
+                       href="${mapUrl}"
                        title="${g.message(code:'overview.map.button.records.map.title', default:'View interactive map')}"
                        role="button"><g:message code="overview.map.button.records.map" default="View Interactive Map"/></a>
                     <g:if test="${grailsApplication.config.map.simpleMapButton.toBoolean()}">
                         <a class="btn btn-primary btn-lg"
-                           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}${recordsFilterToggle? "&fq="+recordsFilter : ""}${grailsApplication.config?.additionalMapFilter?:""}#tab_mapView"
+                           href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}#tab_mapView"
                            title="${g.message(code:'overview.map.button.records.simplemap.title', default:'View map')}"
                            role="button"><g:message code="overview.map.button.records.simplemap" default="View map"/></a>
                     </g:if>
                     <a class="btn btn-primary btn-lg"
-                       href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}${recordsFilterToggle? "&fq="+recordsFilter : ""}${grailsApplication.config?.additionalMapFilter?:""}#tab_recordsView"
+                       href="${biocacheUrl}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid}#tab_recordsView"
                        title="${g.message(code:'overview.map.button.records.list.title', default:'View records')}"
                        role="button"><g:message code="overview.map.button.records.list" default="View records"/></a>
                 </div>
-
             </div>
-            </g:if>
 
             <div class="panel panel-default panel-actions">
                 <div class="panel-body">
