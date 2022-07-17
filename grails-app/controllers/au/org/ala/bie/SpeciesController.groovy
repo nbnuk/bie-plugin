@@ -17,9 +17,8 @@ package au.org.ala.bie
 import au.org.ala.bie.webapp2.SearchRequestParamsDTO
 import grails.converters.JSON
 import groovy.json.JsonSlurper
-import org.apache.commons.lang.WordUtils
 import org.grails.web.json.JSONObject
-import org.apache.commons.lang.StringUtils
+
 
 
 /**
@@ -35,16 +34,6 @@ class SpeciesController {
     def utilityService
     def biocacheService
     def authService
-
-    def allResultsGuids = []
-    def allResultsOccs = 0
-    def allResultsOccsNoMapFilter = 0
-    def pageResultsOccs = 0
-    def pageResultsOccsPresence = 0
-    def pageResultsOccsAbsence = 0
-    def recordsFilter = ''
-
-    def pageGroups = []
 
     def geoSearch = {
 
@@ -208,107 +197,6 @@ class SpeciesController {
     def logout = {
         session.invalidate()
         redirect(url:"${params.casUrl}?url=${params.appUrl}")
-    }
-
-    /**
-     * Note, 'all results' means up to the config search.speciesLimit value (which may differ from the page size)
-     */
-    def setResultStats (pageResults, searchResultsPresence, searchResultsAbsence) {
-        allResultsGuids = []
-        allResultsOccs = 0
-        pageResultsOccs = 0
-        pageResultsOccsPresence = 0
-        pageResultsOccsAbsence = 0
-
-        def sr
-        def rows = params.rows?:(grailsApplication.config?.search?.defaultRows?:10)
-        def rowsMax = grailsApplication.config?.search?.speciesLimit ?: 100
-        if ((pageResults?.searchResults?.totalRecords ?: 0) > rows.toInteger()) { //must load all results
-            // its horrible to call twice, once for single page and once for all results, but that seems to be what we have to do
-            def query = params.q ?: "".trim()
-            if (query == "*") query = ""
-            def filterQuery = params.list('fq') // will be a list even with only one value
-            def recordsFilter = getRecordsFilter()
-
-            def sortField = params.sortField ?: (grailsApplication.config?.search?.defaultSortField ?: "")
-            def sortDirection = params.dir ?: (grailsApplication.config?.search?.defaultSortOrder ?: "desc")
-
-            if (params.dir && !params.sortField) {
-                sortField = "score" // default sort (field) of "score" when order is defined on its own
-            }
-
-            def includeSynonyms = (params.includeSynonyms?:'off') == 'on'
-
-            def requestObj = new SearchRequestParamsDTO(query, filterQuery, 0, rowsMax, sortField, sortDirection, includeSynonyms)
-            log.info "SearchRequestParamsDTO = " + requestObj
-            def searchResults = bieService.searchBieOccFilter(requestObj, recordsFilter, true)[0]
-
-            sr = searchResults?.searchResults
-        } else {
-            sr = pageResults?.searchResults
-        }
-        if (sr) {
-            sr.results.each { result ->
-                allResultsGuids << result.guid
-                allResultsOccs += result?.occurrenceCount?: 0
-            }
-        }
-        sr = pageResults?.searchResults
-        if (sr) {
-            sr.results.each { result ->
-                pageResultsOccs += result?.occurrenceCount?: 0
-            }
-        }
-
-        sr = searchResultsPresence?.searchResults
-        if (sr) {
-            sr.results.each { result ->
-                pageResultsOccsPresence += result?.occurrenceCount?: 0
-            }
-        }
-
-        sr = searchResultsAbsence?.searchResults
-        if (sr) {
-            sr.results.each { result ->
-                pageResultsOccsAbsence += result?.occurrenceCount?: 0
-            }
-        }
-    }
-
-    def setResultGroups (pageResults, groupField) {
-        pageGroups = []
-        def sr
-        def areOthers = false
-        sr = pageResults?.searchResults
-        if (sr) {
-            sr.results.each { result ->
-                if (result[ groupField ]) {
-                    def grp = result[ groupField ]
-                    if (grp instanceof Collection) {
-                        pageGroups << WordUtils.capitalize(grp[0]) //take first element - alternative is to potentially put same entry into multiple groups
-                    } else {
-                        pageGroups << WordUtils.capitalize(grp)
-                    }
-                } else {
-                    areOthers = true
-                }
-            }
-        }
-        pageGroups = pageGroups.sort().unique()
-        if (areOthers) pageGroups = pageGroups.plus('Ungrouped') //TODO i18n
-    }
-
-    def occurrences(){
-        def title = "INNS species" //TODO
-        //getAllResults()
-
-        def url = biocacheService.performBatchSearch(allResultsGuids, title, recordsFilter)
-
-        if(url){
-            redirect(url:url)
-        } else {
-            redirect(controller: "species", action: "search") //TODO: need to pass URL filter params to this?
-        }
     }
 
     private regularise(String guid) {
