@@ -75,16 +75,6 @@ class SpeciesController {
         }
     }
 
-    def getRecordsFilter() {
-        //for record filter toggle
-        def recordsFilter = grailsApplication.config?.biocacheService?.queryContext?:""
-        if (params.includeRecordsFilter) {
-            if (params.includeRecordsFilter == 'biocacheService-altQueryContext') {
-                recordsFilter = grailsApplication.config?.biocacheService?.altQueryContext ?: ""
-            }
-        }
-        return recordsFilter
-    }
 
     /**
      * Search page - display search results from the BIE (includes results for non-species pages too)
