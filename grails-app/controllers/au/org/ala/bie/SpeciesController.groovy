@@ -123,9 +123,6 @@ class SpeciesController {
         }
     }
 
-
-
-
     /**
      * Species page - display information about the requested taxa
      *
@@ -143,8 +140,6 @@ class SpeciesController {
         def taxonDetails = bieService.getTaxonConcept(guid)
         log.debug "show - guid = ${guid} "
 
-        def recordsFilter = getRecordsFilter()
-
         if (!taxonDetails) {
             log.error "Error requesting taxon concept object: " + guid
             response.status = 404
@@ -161,56 +156,9 @@ class SpeciesController {
         } else if (taxonDetails.taxonConcept?.guid && taxonDetails.taxonConcept.guid != guid) {
             // old identifier so redirect to current taxon page
             redirect(uri: "/species/${taxonDetails.taxonConcept.guid}")
-
         } else {
-            def synonymAllResultsOccs = -1
-
-            if (taxonDetails.taxonConcept.acceptedConceptID) {
-                def synonymOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.acceptedConceptID, "presence", recordsFilter, true, false)
-                def synonymOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.acceptedConceptID, "absence", recordsFilter, true, false)
-                synonymAllResultsOccs = synonymOccsPresence + synonymOccsAbsence
-                if ((pageResultsOccsPresence == null) || (synonymOccsAbsence == null)) {
-                    synonymAllResultsOccs = 0
-                }
-            }
-
-            def pageResultsOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "presence", recordsFilter, true, false)
-            def pageResultsOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "absence", recordsFilter, true, false)
-            def allResultsOccs = pageResultsOccsPresence + pageResultsOccsAbsence
-            if (pageResultsOccsPresence == null) {
-                pageResultsOccsPresence = -1
-                allResultsOccs = -1
-            }
-            if (pageResultsOccsAbsence == null) {
-                pageResultsOccsAbsence = -1
-                allResultsOccs = -1
-            }
-            def pageResultsOccs = allResultsOccs
-            def allResultsOccsNoMapFilter = 0
-            if ((grailsApplication.config?.species?.mapPresenceAndAbsence?:"") == "true") {
-                //have all info needed
-            } else {
-                //allResultsOccs = pageResultsOccs = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all", recordsFilter, true, false)
-                if (grailsApplication.config?.additionalMapFilter == "fq=occurrence_status:present" || grailsApplication.config?.additionalMapFilter == "fq=-occurrence_status:present") {
-                    //for these common options don't make *another* web service call
-                    allResultsOccsNoMapFilter = allResultsOccs
-                } else {
-                    allResultsOccsNoMapFilter = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.guid, "all", recordsFilter, true, true)
-                    if (allResultsOccsNoMapFilter == null) allResultsOccsNoMapFilter = -1
-                }
-            }
-            def jsonSlurper = new JsonSlurper()
-            //fake up a search results JSON object to look like that returned for species search list jsonSlurper.parseText(
-            def searchResults = '{ "results": [{"occurrenceCount":"' + allResultsOccs + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
-            def searchResultsPresence = '{ "results": [{"occurrenceCount":"' + pageResultsOccsPresence + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
-            def searchResultsAbsence = '{ "results": [{"occurrenceCount":"' + pageResultsOccsAbsence + '", "guid":"' + taxonDetails.taxonConcept.guid + '", "scientificName":"notused"}] }'
-
             render(view: 'show', model: [
                     tc: taxonDetails,
-                    synonymOccurrenceRecords: synonymAllResultsOccs,
-                    searchResults: searchResults,
-                    searchResultsPresence: searchResultsPresence,
-                    searchResultsAbsence: searchResultsAbsence,
                     statusRegionMap: utilityService.getStatusRegionCodes(),
                     infoSourceMap:[],
                     textProperties: [],
@@ -222,14 +170,7 @@ class SpeciesController {
                     sortCommonNameSources: utilityService.getNamesAsSortedMap(taxonDetails.commonNames),
                     taxonHierarchy: bieService.getClassificationForGuid(taxonDetails.taxonConcept.guid),
                     childConcepts: bieService.getChildConceptsForGuid(taxonDetails.taxonConcept.guid),
-                    speciesList: bieService.getSpeciesList(taxonDetails.taxonConcept?.guid?:guid),
-                    allResultsOccurrenceRecords: allResultsOccs,
-                    allResultsOccurrenceRecordsNoMapFilter: allResultsOccsNoMapFilter,
-                    pageResultsOccurrenceRecords: pageResultsOccs,
-                    pageResultsOccurrencePresenceRecords: pageResultsOccsPresence,
-                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence,
-                    recordsFilterToggle: params.includeRecordsFilter ?: "",
-                    recordsFilter: recordsFilter
+                    speciesList: bieService.getSpeciesList(taxonDetails.taxonConcept?.guid?:guid)
             ])
         }
     }
