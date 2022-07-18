@@ -491,7 +491,9 @@ var MAP_CONF = {
         resultsToMapJSON:           null,
         presenceOrAbsence:          "${(grailsApplication.config?.species?.mapPresenceAndAbsence == 'true') ? "presence" : ""}",
         guid:                       "${guid}",
-        scientificName:             "${tc?.taxonConcept?.nameString ?: ''}"
+        scientificName:             "${tc?.taxonConcept?.nameString ?: ''}",
+        viewAllOccurrenceRecordsUrl: "${grailsApplication.config.biocacheService.baseURL}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}${recordsFilterToggle? "&fq="+recordsFilter : ""}",
+        viewAllOccurrenceRecordsAsMapUrl: "${grailsApplication.config.biocacheService.baseURL}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}${recordsFilterToggle? "&fq="+recordsFilter : ""}#tab_mapView"
 }
 
 $(function(){
