@@ -29,16 +29,14 @@ class SearchRequestParamsDTO {
     def rows
     def sort
     def dir
-    def includeSynonyms
 
-    SearchRequestParamsDTO(q, fq, start, rows, sort, dir, includeSynonyms) {
+    SearchRequestParamsDTO(q, fq, start, rows, sort, dir) {
         this.q = q
         this.fq = fq
         this.start = start
         this.rows = rows
         this.sort = sort
         this.dir = dir
-        this.includeSynonyms = includeSynonyms
     }
 
     def getQueryString() {
@@ -46,12 +44,10 @@ class SearchRequestParamsDTO {
         queryStr.append("q=" + URIUtil.encodeWithinQuery(q)) //q.encodeAsURL())
         def fqIsList = fq.getClass().metaClass.getMetaMethod("join", String)
         if (fq && fqIsList) {
-            //def newFq = fq.collect { it.replaceAll(/\s+/, "+") }
-            def newFq = fq.collect { URIUtil.encodeWithinQuery(it).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":") }
+            def newFq = fq.collect { it.replaceAll(/\s+/, "+") }
             queryStr.append("&fq=" + newFq?.join("&fq="))
         } else if (fq) {
-            //queryStr.append("&fq=" + fq.replaceAll(" ", "+"))
-            queryStr.append("&fq=" + URIUtil.encodeWithinQuery(fq))
+            queryStr.append("&fq=" + fq.replaceAll(" ", "+"))
         }
         queryStr.append("&start=" + start)
         queryStr.append("&rows=" + rows)
