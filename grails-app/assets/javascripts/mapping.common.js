@@ -169,6 +169,7 @@ function setMapTitle (MAP_CONF) {
     }
     if (MAP_CONF.pageResultsOccurrenceRecords >= 0) {
         $(".occurrenceRecordCount").html(MAP_CONF.pageResultsOccurrenceRecords.toLocaleString()); //species show charts tab
+        $(".occurrenceRecordCount").addClass("loaded")
     }
     if (MAP_CONF.presenceOrAbsence == 'presence') {
         if (MAP_CONF.pageResultsOccurrencePresenceRecords >= 0) {
