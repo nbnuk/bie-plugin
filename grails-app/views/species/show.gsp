@@ -43,14 +43,12 @@
     <meta name="layout" content="${grailsApplication.config.skin.layout}"/>
     <asset:javascript src="show"/>
     <asset:stylesheet src="show"/>
-    <asset:javascript src="show.mapping.js"/>
     <asset:javascript src="charts"/>
     <asset:stylesheet src="charts"/>
     <asset:javascript src="ala/images-client.js"/>
     <asset:stylesheet src="ala/images-client.css"/>
     <asset:javascript src="ala/images-client-gallery.js"/>
     <asset:stylesheet src="ala/images-client-gallery.css"/>
-    <asset:javascript src="conservationevidence" />
 </head>
 
 <body class="page-taxon">
@@ -72,44 +70,18 @@
             </div>
         </g:if>
         <div class="header-inner">
-            <g:if test="${grailsApplication.config?.nbn?.inns == 'true' }">
-                <h5 class="pull-right" style="clear:right">
-                    <a href="/"
-                       title="Back to search" class="btn btn-sm btn-default active">Back to search</a>
-                </h5>
-                <g:if test="${grailsApplication.config?.biocacheService?.altQueryContext}">
-                    <div style="float:right;clear:right">
-                        <form method="get"
-                              action=""
-                              id="records-include-filter-form">
-                            <div class="input-group" >
-                                <label for="includeRecordsFilter">Include records for</label>
-                                <select class="form-control input-sm" id="includeRecordsFilter" name="includeRecordsFilter" onchange="this.form.submit()">
-                                    <option value="biocacheService-queryContext" ${recordsFilterToggle == '' || recordsFilterToggle == 'biocacheService-queryContext'? 'selected="selected"' : '' }>Wales</option>
-                                    <option value="biocacheService-altQueryContext" ${recordsFilterToggle == 'biocacheService-altQueryContext'? 'selected="selected"' : '' }>Wales + 20km buffer</option>
-                                </select>
-                            </div>
-                        </form>
-                    </div>
-                </g:if>
-            </g:if>
-            <g:else>
-                <h5 class="pull-right json">
-                    <a href="${jsonLink}" target="data"
-                        title="${message(code:"show.view.json.title")}" class="btn btn-sm btn-default active"
-                        data-toggle="tooltip" data-placement="bottom"><g:message code="show.json" /></a>
-                </h5>
-            </g:else>
-
+            <h5 class="pull-right json">
+                <a href="${jsonLink}" target="data"
+                   title="${message(code:"show.view.json.title")}" class="btn btn-sm btn-default active"
+                   data-toggle="tooltip" data-placement="bottom"><g:message code="show.json" /></a>
+            </h5>
             <h1>${raw(sciNameFormatted)}</h1>
             <g:set var="commonNameDisplay" value="${(tc?.commonNames) ? tc?.commonNames?.opt(0)?.nameString : ''}"/>
-            <g:set var="commonNameSingleDisplay" value="${(tc?.commonNameSingle) ?: commonNameDisplay}"/>
-            <g:if test="${commonNameSingleDisplay}">
-                <h2>${raw(commonNameSingleDisplay)}</h2>
+            <g:if test="${commonNameDisplay}">
+                <h2>${raw(commonNameDisplay)}</h2>
             </g:if>
             <g:if test="${tc?.taxonConcept?.acceptedConceptName}">
-                Click below for synonym of
-                <h2><g:link uri="/species/${tc.taxonConcept.acceptedConceptID}">${tc.taxonConcept.acceptedConceptName}</g:link> - (${synonymOccurrenceRecords} records)</h2>
+                <h2><g:link uri="/species/${tc.taxonConcept.acceptedConceptID}">${tc.taxonConcept.acceptedConceptName}</g:link></h2>
             </g:if>
             <h5 class="inline-head taxon-rank">${tc.taxonConcept.rankString}</h5>
             <g:if test="${tc.taxonConcept.taxonomicStatus}"><h5 class="inline-head taxonomic-status" title="${message(code: 'taxonomicStatus.' + tc.taxonConcept.taxonomicStatus + '.detail', default: '')}"><g:message code="taxonomicStatus.${tc.taxonConcept.taxonomicStatus}" default="${tc.taxonConcept.taxonomicStatus}"/></h5></g:if>
@@ -117,37 +89,24 @@
                 <strong>Name authority:</strong>
                 <span class="name-authority">${tc?.taxonConcept.nameAuthority ?: grailsApplication.config.defaultNameAuthority}</span>
             </h5>
-            <g:if test="${grailsApplication.config.species?.additionalHeadlines}">
-                <g:each var="fieldToDisplay" in="${grailsApplication.config.species.additionalHeadlines.split(",")}">
-                    <g:if test='${tc."${fieldToDisplay}"}'>
-                        <h5 class="inline-head"><strong><g:message code="facet.${fieldToDisplay}" default="${fieldToDisplay}"/>:</strong>
-                        <span class="species-headline-${fieldToDisplay}">${tc."${fieldToDisplay}"}</span></h5>
-                    </g:if>
-                </g:each>
-            </g:if>
         </div>
     </header>
 
-    <!-- don't display full page where there is an accepted synonym -->
-    <g:if test="${!tc?.taxonConcept?.acceptedConceptName}">
-
-        <div id="main-content" class="main-content panel panel-body">
-            <div class="taxon-tabs">
-                <ul class="nav nav-tabs">
-                    <g:each in="${tabs}" status="ts" var="tab">
-                        <li class="${ts == 0 ? 'active' : ''}"><a href="#${tab}" data-toggle="tab"><g:message
-                                code="label.${tab}" default="${tab}"/></a></li>
-                    </g:each>
-                </ul>
-                <div class="tab-content">
-                    <g:each in="${tabs}" status="ts" var="tab">
-                        <g:render template="${tab}"/>
-                    </g:each>
-                </div>
+    <div id="main-content" class="main-content panel panel-body">
+        <div class="taxon-tabs">
+            <ul class="nav nav-tabs">
+                <g:each in="${tabs}" status="ts" var="tab">
+                    <li class="${ts == 0 ? 'active' : ''}"><a href="#${tab}" data-toggle="tab"><g:message
+                            code="label.${tab}" default="${tab}"/></a></li>
+                </g:each>
+            </ul>
+            <div class="tab-content">
+                <g:each in="${tabs}" status="ts" var="tab">
+                    <g:render template="${tab}"/>
+                </g:each>
             </div>
-        </div><!-- end main-content -->
-    </g:if>
-
+        </div>
+    </div><!-- end main-content -->
 </section>
 
 <!-- taxon-summary-thumb template -->
@@ -194,26 +153,6 @@
         <p class="rights">Rights holder: <span class="rightsText"></span></p>
 
         <p class="provider">Provided by: <a href="#" class="providedBy"></a></p>
-    </div>
-</div>
-
-<div id="descriptionCollapsibleTemplate" class="panel panel-default panel-description" style="display:none;">
-    <div class="panel-heading">
-        <a href="#" class="showHidePageGroup" data-name="0" style="text-decoration: none"><span class="caret right-caret"></span>
-        <h3 class="panel-title title" style="display:inline"></h3></a>
-    </div>
-    <div class="facetsGroup" id="group_0" style="display:none">
-        <div class="panel-body">
-            <p class="content"></p>
-        </div>
-
-        <div class="panel-footer">
-            <p class="source">Source: <span class="sourceText"></span></p>
-
-            <p class="rights">Rights holder: <span class="rightsText"></span></p>
-
-            <p class="provider">Provided by: <a href="#" class="providedBy"></a></p>
-        </div>
     </div>
 </div>
 
@@ -405,7 +344,6 @@
     var SHOW_CONF = {
         biocacheUrl:        "${grailsApplication.config.biocache.baseURL}",
         biocacheServiceUrl: "${grailsApplication.config.biocacheService.baseURL}",
-        biocacheQueryContext: "${grailsApplication.config.biocacheService?.queryContext?:""}",
         layersServiceUrl:   "${grailsApplication.config.layersService.baseURL}",
         collectoryUrl:      "${grailsApplication.config.collectory.baseURL}",
         profileServiceUrl:  "${grailsApplication.config.profileService.baseURL}",
@@ -427,7 +365,20 @@
         scholarUrl:         "${createLink(controller: 'externalSite', action: 'scholar', params: [s: tc?.taxonConcept?.nameString ?: ''])}",
         soundUrl:           "${createLink(controller: 'species', action: 'soundSearch', params: [s: tc?.taxonConcept?.nameString ?: ''])}",
         eolLanguage:        "${grailsApplication.config.eol.lang}",
+        defaultDecimalLatitude: ${grailsApplication.config.defaultDecimalLatitude},
+        defaultDecimalLongitude: ${grailsApplication.config.defaultDecimalLongitude},
+        defaultZoomLevel: ${grailsApplication.config.defaultZoomLevel},
+        mapAttribution: "${raw(grailsApplication.config.skin.orgNameLong)}",
+        defaultMapUrl: "${grailsApplication.config.map.default.url}",
+        defaultMapAttr: "${raw(grailsApplication.config.map.default.attr)}",
+        defaultMapDomain: "${grailsApplication.config.map.default.domain}",
+        defaultMapId: "${grailsApplication.config.map.default.id}",
+        defaultMapToken: "${grailsApplication.config.map.default.token}",
+        recordsMapColour: "${grailsApplication.config.map.records.colour}",
+        mapQueryContext: "${grailsApplication.config.biocacheService.queryContext}",
+        additionalMapFilter: "${raw(grailsApplication.config.additionalMapFilter)}",
         noImage100Url: "${resource(dir: 'images', file: 'noImage100.jpg')}",
+        map: null,
         imageDialog: '${imageViewerType}',
         likeUrl: "${createLink(controller: 'imageClient', action: 'likeImage')}",
         dislikeUrl: "${createLink(controller: 'imageClient', action: 'dislikeImage')}",
@@ -441,89 +392,31 @@
         getPreferredSpeciesListUrl: "${grailsApplication.config.speciesList.baseURL}",
         druid: "${grailsApplication.config.speciesList.preferredSpeciesListDruid}",
         addPreferenceButton: ${imageClient.checkAllowableEditRole()},
-        organisationName: "${grailsApplication.config.skin?.orgNameLong}",
-
-        speciesAdditionalHeadlines: "${grailsApplication.config.species?.additionalHeadlines?:''}",
-        speciesAdditionalHeadlinesSpeciesList: "${grailsApplication.config.species?.additionalHeadlinesSpeciesList?:''}",
-        tagNNSSlist: "${grailsApplication.config.species?.tagNNSSlist?:''}",
-        tagNNSSlistHTML: "${grailsApplication.config.species?.tagNNSSlistHTML?:''}",
-        speciesShowNNSSlink: "${grailsApplication.config.species?.showNNSSlink?:''}",
-        speciesNNSSlink: "${grailsApplication.config.species?.NNSSlink?:''}",
-        speciesListLinks: "${grailsApplication.config.species?.listLinks?:''}",
-        nbnRegion: "${grailsApplication.config.nbn?.region?:"n/a"}",
-
+        mapOutline: ${grailsApplication.config.map.outline ?: 'false'},
+        mapEnvOptions: "${grailsApplication.config.map.env?.options?:'color:' + grailsApplication.config.map.records.colour+ ';name:circle;size:4;opacity:0.8'}",
         troveUrl: "${raw(grailsApplication.config.literature?.trove?.url ?: 'http://api.trove.nla.gov.au/result?key=fvt2q0qinduian5d&zone=book&encoding=json')}",
         bhlUrl: "${raw(grailsApplication.config.literature?.bhl?.url ?: 'http://bhlidx.ala.org.au/select')}"
-};
+    };
 
-var MAP_CONF = {
-        mapType:                    "show",
-        biocacheServiceUrl:         "${grailsApplication.config.biocacheService.baseURL}",
-        biocacheUrl:                "${grailsApplication.config.biocache.baseURL}",
-        allResultsOccurrenceRecords:            ${allResultsOccurrenceRecords},
-        allResultsOccurrenceRecordsNoMapFilter: ${allResultsOccurrenceRecordsNoMapFilter},
-        pageResultsOccurrenceRecords:           ${pageResultsOccurrenceRecords},
-        pageResultsOccurrencePresenceRecords:   ${pageResultsOccurrencePresenceRecords},
-        pageResultsOccurrenceAbsenceRecords:    ${pageResultsOccurrenceAbsenceRecords},
-        defaultDecimalLatitude:     ${grailsApplication.config.defaultDecimalLatitude},
-        defaultDecimalLongitude:    ${grailsApplication.config.defaultDecimalLongitude},
-        defaultZoomLevel:           ${grailsApplication.config.defaultZoomLevel},
-        mapAttribution:             "${raw(grailsApplication.config.skin.orgNameLong)}",
-        defaultMapUrl:              "${grailsApplication.config.map.default.url}",
-        defaultMapAttr:             "${raw(grailsApplication.config.map.default.attr)}",
-        defaultMapDomain:           "${grailsApplication.config.map.default.domain}",
-        defaultMapId:               "${grailsApplication.config.map.default.id}",
-        defaultMapToken:            "${grailsApplication.config.map.default.token}",
-        recordsMapColour:           "${grailsApplication.config.map.records.colour}",
-        mapQueryContext:            "${recordsFilterToggle == 'biocacheService-altQueryContext'? (grailsApplication.config?.biocacheService?.altQueryContext ?: '') : (grailsApplication.config?.biocacheService?.queryContext ?: '')}",
-        additionalMapFilter:        "${raw(grailsApplication.config.additionalMapFilter)}",
-        map:                        null,
-        mapOutline:                 ${grailsApplication.config.map.outline ?: 'false'},
-        mapEnvOptions:              "${grailsApplication.config.map.env?.options?:'color:' + (grailsApplication.config.map?.records?.colour?: 'e6704c')+ ';name:circle;size:4;opacity:0.8'}",
-        mapEnvLegendTitle:          "${grailsApplication.config.map.env?.legendtitle?:''}",
-        mapEnvLegendHideMax:        "${grailsApplication.config.map.env?.legendhidemaxrange?:false}",
-        mapLayersFqs:               "${grailsApplication.config.map.layers?.fqs?:''}",
-        mapLayersLabels:            "${grailsApplication.config.map.layers?.labels?:''}",
-        mapLayersColours:           "${grailsApplication.config.map.layers?.colours?:''}",
-        showResultsMap:             ${grailsApplication.config?.species?.mapResults == 'true'},
-        mapPresenceAndAbsence:      ${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'},
-        resultsToMap:               "${(grailsApplication.config?.species?.mapPresenceAndAbsence == 'true') ? searchResultsPresence : searchResults}",
-        resultsToMapJSON:           null,
-        presenceOrAbsence:          "${(grailsApplication.config?.species?.mapPresenceAndAbsence == 'true') ? "presence" : ""}",
-        guid:                       "${guid}",
-        scientificName:             "${tc?.taxonConcept?.nameString ?: ''}",
-        viewAllOccurrenceRecordsUrl: "${grailsApplication.config.biocacheService.baseURL}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}${recordsFilterToggle? "&fq="+recordsFilter : ""}",
-        viewAllOccurrenceRecordsAsMapUrl: "${grailsApplication.config.biocacheService.baseURL}/occurrences/search?q=lsid:${tc?.taxonConcept?.guid ?: ''}${recordsFilterToggle? "&fq="+recordsFilter : ""}#tab_mapView"
-}
+    $(function(){
+        showSpeciesPage();
+    });
 
-$(function(){
-    showSpeciesPage();
-    <g:if test="${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'}">
-        initialPresenceAbsenceMap(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
-    </g:if>
-    loadTheMap(MAP_CONF)
-});
-
-$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-    var target = $(e.target).attr("href");
-    if(target == "#records") {
-        $('#charts').html(''); //prevent multiple loads
-        <charts:biocache
-            biocacheServiceUrl="${grailsApplication.config.biocacheService.baseURL}"
-            biocacheWebappUrl="${grailsApplication.config.biocache.baseURL}"
-            q="lsid:${guid}"
-            qc="${recordsFilterToggle? (recordsFilter ?: '') : (grailsApplication.config.biocacheService.queryContext ?: '')}"
-            fq=""/>
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        var target = $(e.target).attr("href");
+        if(target == "#records"){
+            $('#charts').html(''); //prevent multiple loads
+            <charts:biocache
+                biocacheServiceUrl="${grailsApplication.config.biocacheService.baseURL}"
+                biocacheWebappUrl="${grailsApplication.config.biocache.baseURL}"
+                q="lsid:${guid}"
+                qc="${grailsApplication.config.biocacheService.queryContext ?: ''}"
+                fq=""/>
     }
     if(target == '#overview'){
-        loadTheMap(MAP_CONF);
+        loadMap();
     }
 });
-
-<g:if test="${grailsApplication.config?.species?.mapPresenceAndAbsence == 'true'}">
-    setPresenceAbsenceToggle(MAP_CONF, "${searchResultsPresence}", "${searchResultsAbsence}");
-</g:if>
-
 </asset:script>
 </body>
 </html>
