@@ -12,10 +12,72 @@
  * implied. See the License for the specific language governing
  * rights and limitations under the License.
  */
+function showSpeciesPage() {
 
+    //console.log("Starting show species page");
 
+    //load content
+    loadOverviewImages();
+    loadMap();
+    loadGalleries();
+    loadExpertDistroMap();
+    loadExternalSources();
+    loadSpeciesLists();
+    loadDataProviders();
+    loadIndigenousData();
+    //
+    ////setup controls
+    addAlerts();
+    // loadBhl(); // now an external link to BHL
+    loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName,'trove-integration','trove-result-list','previousTrove','nextTrove');
+}
 
+function loadSpeciesLists(){
 
+    //console.log('### loadSpeciesLists #### ' + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid);
+    $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?callback=?', function( data ) {
+        for(var i = 0; i < data.length; i++) {
+            var specieslist = data[i];
+            var maxListFields = 10;
+
+            if (specieslist.list.isBIE) {
+                var $description = $('#descriptionTemplate').clone();
+                $description.css({'display': 'block'});
+                $description.attr('id', '#specieslist-block-' + specieslist.dataResourceUid);
+                $description.addClass('species-list-block');
+                $description.find(".title").html(specieslist.list.listName);
+
+                if (specieslist.kvpValues.length > 0) {
+                    var content = "<table class='table'>";
+                    $.each(specieslist.kvpValues, function (idx, kvpValue) {
+                        if (idx >= maxListFields) {
+                            return false;
+                        }
+                        var value = kvpValue.value;
+                        if(kvpValue.vocabValue){
+                            value = kvpValue.vocabValue;
+                        }
+                        content += "<tr><td>" + (kvpValue.key + "</td><td>" + value + "</td></tr>");
+                    });
+                    content += "</table>";
+                    $description.find(".content").html(content);
+                } else {
+                    $description.find(".content").html("A species list provided by " + specieslist.list.listName);
+                }
+
+                $description.find(".source").css({'display':'none'});
+                $description.find(".rights").css({'display':'none'});
+
+                $description.find(".providedBy").attr('href', SHOW_CONF.speciesListUrl + '/speciesListItem/list/' + specieslist.dataResourceUid);
+                $description.find(".providedBy").html(specieslist.list.listName);
+
+                $description.appendTo('#listContent');
+            }
+        }
+    });
+}
+
+//this is patched from ALA version. It is not a customisation
 function addAlerts(){
     // alerts button
     $("#alertsButton").click(function(e) {
@@ -33,7 +95,122 @@ function addAlerts(){
     });
 }
 
+function loadMap() {
 
+    if(SHOW_CONF.map != null){
+        return;
+    }
+
+    //add an occurrence layer for this taxon
+    var taxonLayer = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
+        SHOW_CONF.guid + "&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter, {
+        layers: 'ALA:occurrences',
+        format: 'image/png',
+        transparent: true,
+        attribution: SHOW_CONF.mapAttribution,
+        bgcolor: "0x000000",
+        outline: SHOW_CONF.mapOutline,
+        ENV: SHOW_CONF.mapEnvOptions
+    });
+
+    var speciesLayers = new L.LayerGroup();
+    taxonLayer.addTo(speciesLayers);
+
+    SHOW_CONF.map = L.map('leafletMap', {
+        center: [SHOW_CONF.defaultDecimalLatitude, SHOW_CONF.defaultDecimalLongitude],
+        zoom: SHOW_CONF.defaultZoomLevel,
+        layers: [speciesLayers],
+        scrollWheelZoom: false
+    });
+
+    var defaultBaseLayer = L.tileLayer(SHOW_CONF.defaultMapUrl, {
+        attribution: SHOW_CONF.defaultMapAttr,
+        subdomains: SHOW_CONF.defaultMapDomain,
+        mapid: SHOW_CONF.defaultMapId,
+        token: SHOW_CONF.defaultMapToken
+    });
+
+    defaultBaseLayer.addTo(SHOW_CONF.map);
+
+    var baseLayers = {
+        "Base layer": defaultBaseLayer
+    };
+
+    var sciName = SHOW_CONF.scientificName;
+
+    var overlays = {};
+    overlays[sciName] = taxonLayer;
+
+    L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
+
+    //SHOW_CONF.map.on('click', onMapClick);
+    SHOW_CONF.map.invalidateSize(false);
+
+    updateOccurrenceCount();
+    fitMapToBounds();
+}
+
+/**
+ * Update the total records count for the occurrence map in heading text
+ */
+function updateOccurrenceCount() {
+    $.getJSON(SHOW_CONF.biocacheServiceUrl + '/occurrences/taxaCount?guids=' + SHOW_CONF.guid + "&fq=" + SHOW_CONF.mapQueryContext, function( data ) {
+        if (data) {
+            $.each( data, function( key, value ) {
+                if (value && typeof value == "number") {
+                    $('.occurrenceRecordCount').html(value.toLocaleString());
+                    return false;
+                }
+            });
+        }
+    });
+}
+
+function fitMapToBounds() {
+    var jsonUrl = SHOW_CONF.biocacheServiceUrl + "/mapping/bounds.json?q=lsid:" + SHOW_CONF.guid + "&callback=?";
+    $.getJSON(jsonUrl, function(data) {
+        if (data.length == 4 && data[0] != 0 && data[1] != 0) {
+            //console.log("data", data);
+            var sw = L.latLng(data[1],data[0]);
+            var ne = L.latLng(data[3],data[2]);
+            //console.log("sw", sw.toString());
+            var dataBounds = L.latLngBounds(sw, ne);
+            //var centre = dataBounds.getCenter();
+            var mapBounds = SHOW_CONF.map.getBounds();
+
+            if (!mapBounds.contains(dataBounds) && !mapBounds.intersects(dataBounds)) {
+                SHOW_CONF.map.fitBounds(dataBounds);
+                if (SHOW_CONF.map.getZoom() > 3) {
+                    SHOW_CONF.map.setZoom(3);
+                }
+            }
+
+            SHOW_CONF.map.invalidateSize(true);
+        }
+    });
+}
+
+//function onMapClick(e) {
+//    $.ajax({
+//        url: SHOW_CONF.biocacheServiceUrl + "/occurrences/info",
+//        jsonp: "callback",
+//        dataType: "jsonp",
+//        data: {
+//            q: SHOW_CONF.scientificName,
+//            zoom: "6",
+//            lat: e.latlng.lat,
+//            lon: e.latlng.lng,
+//            radius: 20,
+//            format: "json"
+//        },
+//        success: function (response) {
+//            var popup = L.popup()
+//                .setLatLng(e.latlng)
+//                .setContent("Occurrences at this point: " + response.count)
+//                .openOn(SHOW_CONF.map);
+//        }
+//    });
+//}
 
 function loadDataProviders(){
 
@@ -42,13 +219,8 @@ function loadDataProviders(){
         SHOW_CONF.guid +
         '&pageSize=0&flimit=-1';
 
-    var mapContextUnencoded = $('<textarea />').html(SHOW_CONF.mapQueryContext).text(); //to convert e.g. &quot; back to "
     if(SHOW_CONF.mapQueryContext){
-       url = url + '&fq=' + mapContextUnencoded;
-    }
-    if (SHOW_CONF.biocacheQueryContext) {
-        var bqc_clean = $('<textarea />').html(SHOW_CONF.biocacheQueryContext).text();
-        url += "&fq=" + encodeURI(bqc_clean);
+       url = url + '&fq=' + SHOW_CONF.mapQueryContext;
     }
 
     url = url + '&facet=on&facets=data_resource_uid&callback=?';
@@ -83,7 +255,8 @@ function loadDataProviders(){
 
                     //console.log(uid);
                     $.getJSON(SHOW_CONF.collectoryUrl + "/ws/dataResource/" + uid, function(collectoryData) {
-                        if (collectoryData) {
+
+
                             if (collectoryData.provider) {
                                 tableRow += "<br/><small><a href='" + SHOW_CONF.collectoryUrl + '/public/show/' + uid + "'>" + collectoryData.provider.name + "</a></small>";
                             }
@@ -94,12 +267,9 @@ function loadDataProviders(){
                             tableRow += "</td><td><a href='" + queryUrl + "'><span class='record-count'>" + facetValue.count + "</span></a></td>"
                             tableRow += "</tr>";
                             $('#data-providers-list tbody').append(tableRow);
-                        }
                     });
                 }
             });
-        } else {
-            $('.datasetLabel').html("No datasets have");
         }
     });
 }
@@ -178,9 +348,9 @@ function loadExternalSources(){
     $.ajax({url: SHOW_CONF.eolUrl}).done(function ( data ) {
         //console.log(data);
         //clone a description template...
-        if(data.taxonConcept && data.taxonConcept.dataObjects){
-            //console.log('Loading EOL content - ' + data.taxonConcept.dataObjects.length);
-            $.each(data.taxonConcept.dataObjects, function(idx, dataObject){
+        if(data.dataObjects){
+            //console.log('Loading EOL content - ' + data.dataObjects.length);
+            $.each(data.dataObjects, function(idx, dataObject){
                 //console.log('Loading EOL content -> ' + dataObject.description);
                 if(dataObject.language == SHOW_CONF.eolLanguage || !dataObject.language){
                     var $description = $('#descriptionTemplate').clone();
@@ -500,6 +670,7 @@ function loadGalleryType(category, start) {
     });
 }
 
+//this is patched from ALA version. It is not a customisation
 function getImageTitleFromOccurrence(el){
     var br = "<br/>";
     var briefHtml = "";
@@ -532,6 +703,7 @@ function getImageTitleFromOccurrence(el){
     return briefHtml;
 }
 
+//this is patched from ALA version. It is not a customisation
 function getImageFooterFromOccurrence(el){
     var br = "<br/>";
     var detailHtml = (el.raw_scientificName === undefined? el.scientificName : el.raw_scientificName); //raw scientific name can be null, e.g. if taxon GUIDS were submitted
