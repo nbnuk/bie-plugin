@@ -49,7 +49,6 @@ $(function() {
             addLikeDislikeButton: true,
             addPreferenceButton: SHOW_CONF.addPreferenceButton,
             attribution: attribution,
-            organisationName: SHOW_CONF.organisationName,
             disableLikeDislikeButton: SHOW_CONF.disableLikeDislikeButton,
             likeUrl: SHOW_CONF.likeUrl + '?id=' + imageId,
             dislikeUrl: SHOW_CONF.dislikeUrl + '?id=' + imageId,
@@ -84,17 +83,4 @@ $(function() {
         })
         $(this).prev(".collapse").collapse("toggle");
     });
-
-
-    //need delegate rather than .click(function e) since dataset sections added asynchronously
-    $(document).delegate('.showHidePageGroup', 'click', function (e) {
-        e.preventDefault();
-        var name = $(this).data('name');
-        console.log('toggle on #group_' + name, $('#group_' + name).is(":visible"))
-        $(this).find('span').toggleClass('right-caret');
-        $('#group_' + name).slideToggle(600, function () {
-
-        });
-    });
-
 });
