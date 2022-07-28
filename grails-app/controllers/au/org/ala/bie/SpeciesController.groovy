@@ -121,7 +121,6 @@ class SpeciesController {
                 }
             }
         }
-        //getRecordsFilter()
 
         def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection, includeSynonyms)
         log.info "SearchRequestParamsDTO = " + requestObj
