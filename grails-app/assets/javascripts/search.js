@@ -255,7 +255,7 @@ function injectBiocacheResultsActual(recsTot, limitSpp) {
     // var html = "<span class='biocacheRecordsLink'><a href=\"" + url + "\" id=\"biocacheRecordsLink\" title='View occurrences for up to " + limitSpp + " species'>View occurrence records</a> (" + numberWithCommas(recsTot) + ")</span>";
     // $(".record-cursor-details").append(html);
 
-    var html = "<span class='biocacheRecordsLink'><button type='submit' class='btn btn-link' title='View occurrences for up to " + limitSpp + " species'>View occurrence records</button> (" + numberWithCommas(recsTot) + ")</span>";
+    var html = "<button type='submit' class='btn btn-link brand-primary' style='padding-right: 0' title='View occurrences for up to " + limitSpp + " species'>View occurrence records</button> (" + numberWithCommas(recsTot) + ")";
 
     var allResultsGuids = MAP_CONF.allResultsGuids;
     var formAction = '/occurrences';
@@ -265,7 +265,7 @@ function injectBiocacheResultsActual(recsTot, limitSpp) {
         formAction += '?includeRecordsFilter' + '=' + includeRecordsFilter;
     }
 
-    var form = $('<form action="'+ formAction + '" method="post"></form>');
+    var form = $('<form action="'+ formAction + '" class="biocacheRecordsLink" method="post"></form>');
 
     $(form).append(html);
 
