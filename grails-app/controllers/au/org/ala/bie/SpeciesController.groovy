@@ -478,7 +478,7 @@ class SpeciesController {
         return pageGroups;
     }
 
-    def occurrences (){
+    def occurrences(){
         def title = "INNS species" //TODO
         //getAllResults()
 
