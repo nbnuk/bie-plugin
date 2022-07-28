@@ -36,16 +36,6 @@ class SpeciesController {
     def biocacheService
     def authService
 
-    def allResultsGuids = []
-    def allResultsOccs = 0
-    def allResultsOccsNoMapFilter = 0
-    def pageResultsOccs = 0
-    def pageResultsOccsPresence = 0
-    def pageResultsOccsAbsence = 0
-    def recordsFilter = ''
-
-    def pageGroups = []
-
     def geoSearch = {
 
         def searchResults = []
@@ -131,7 +121,7 @@ class SpeciesController {
                 }
             }
         }
-        recordsFilter = getRecordsFilter()
+        //getRecordsFilter()
 
         def requestObj = new SearchRequestParamsDTO(query, filterQuery, startIndex, rows, sortField, sortDirection, includeSynonyms)
         log.info "SearchRequestParamsDTO = " + requestObj
@@ -175,13 +165,14 @@ class SpeciesController {
             redirect(action: "search", params: [q: query, fq: fq2, start: startIndex, rows: rows, score: sortField, dir: sortDirection])
         }
 
+        def pageGroups = []
         if (searchResults instanceof JSONObject && searchResults.has("error")) {
             log.error "Error requesting taxon concept object: " + searchResults.error
             render(view: '../error', model: [message: searchResults.error])
         } else {
-            setResultStats(searchResults, searchResultsPresence, searchResultsAbsence)
+            def resultsStats = setResultStats(searchResults, searchResultsPresence, searchResultsAbsence)
             if (grailsApplication.config.search?.compactResultsGroupBy?:"" != "") {
-                setResultGroups(searchResults, grailsApplication.config.search?.compactResultsGroupBy)
+                pageGroups = getResultGroups(searchResults, grailsApplication.config.search?.compactResultsGroupBy)
             }
             def jsonSlurper = new JsonSlurper()
             def facetsOnlyShowValuesJson = jsonSlurper.parseText((grailsApplication.config.search?.facetsOnlyShowValues ?: "[]"))
@@ -229,10 +220,11 @@ class SpeciesController {
                     collectionsMap: utilityService.addFqUidMap(filterQuery),
                     lsids: lsids,
                     offset: startIndex,
-                    allResultsOccurrenceRecords: allResultsOccs,
-                    pageResultsOccurrenceRecords: pageResultsOccs,
-                    pageResultsOccurrencePresenceRecords: pageResultsOccsPresence,
-                    pageResultsOccurrenceAbsenceRecords: pageResultsOccsAbsence,
+                    allResultsOccurrenceRecords: resultsStats.allResultsOccs,
+                    pageResultsOccurrenceRecords: resultsStats.pageResultsOccs,
+                    pageResultsOccurrencePresenceRecords: resultsStats.pageResultsOccsPresence,
+                    pageResultsOccurrenceAbsenceRecords: resultsStats.pageResultsOccsAbsence,
+                    allResultsGuids: resultsStats.allResultsGuids,
                     recordsFilterToggle: params.includeRecordsFilter ?: "",
                     recordsFilter: recordsFilter,
                     compactResults: showAsCompact,
@@ -393,11 +385,11 @@ class SpeciesController {
      * Note, 'all results' means up to the config search.speciesLimit value (which may differ from the page size)
      */
     def setResultStats (pageResults, searchResultsPresence, searchResultsAbsence) {
-        allResultsGuids = []
-        allResultsOccs = 0
-        pageResultsOccs = 0
-        pageResultsOccsPresence = 0
-        pageResultsOccsAbsence = 0
+        def allResultsGuids = []
+        def allResultsOccs = 0
+        def pageResultsOccs = 0
+        def pageResultsOccsPresence = 0
+        def pageResultsOccsAbsence = 0
 
         def sr
         def rows = params.rows?:(grailsApplication.config?.search?.defaultRows?:10)
@@ -452,10 +444,18 @@ class SpeciesController {
                 pageResultsOccsAbsence += result?.occurrenceCount?: 0
             }
         }
+
+        return new ResultsStats(
+                allResultsGuids,
+                allResultsOccs,
+                pageResultsOccs,
+                pageResultsOccsPresence,
+                pageResultsOccsAbsence
+        );
     }
 
-    def setResultGroups (pageResults, groupField) {
-        pageGroups = []
+    def getResultGroups (pageResults, groupField) {
+        def pageGroups = []
         def sr
         def areOthers = false
         sr = pageResults?.searchResults
@@ -475,13 +475,15 @@ class SpeciesController {
         }
         pageGroups = pageGroups.sort().unique()
         if (areOthers) pageGroups = pageGroups.plus('Ungrouped') //TODO i18n
+
+        return pageGroups;
     }
 
-    def occurrences(){
+    def occurrences (){
         def title = "INNS species" //TODO
         //getAllResults()
 
-        def url = biocacheService.performBatchSearch(allResultsGuids, title, recordsFilter)
+        def url = biocacheService.performBatchSearch(params.allResultsGuids, title, recordsFilter)
 
         if(url){
             redirect(url:url)
@@ -499,4 +501,27 @@ class SpeciesController {
         return guid
     }
 
+}
+
+class ResultsStats{
+
+    public ResultsStats(
+            def allResultsGuids = [],
+            def allResultsOccs = 0,
+            def pageResultsOccs = 0,
+            def pageResultsOccsPresence = 0,
+            def pageResultsOccsAbsence = 0
+    ){
+        this.allResultsGuids = allResultsGuids;
+        this.allResultsOccs = allResultsOccs;
+        this.pageResultsOccs = pageResultsOccs;
+        this.pageResultsOccsPresence = pageResultsOccsPresence;
+        this.pageResultsOccsAbsence = pageResultsOccsAbsence;
+    }
+
+    def allResultsGuids = []
+    def allResultsOccs = 0
+    def pageResultsOccs = 0
+    def pageResultsOccsPresence = 0
+    def pageResultsOccsAbsence = 0
 }

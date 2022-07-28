@@ -775,6 +775,7 @@ var MAP_CONF = {
     pageResultsOccurrenceRecords:           ${pageResultsOccurrenceRecords},
     pageResultsOccurrencePresenceRecords:   ${pageResultsOccurrencePresenceRecords},
     pageResultsOccurrenceAbsenceRecords:    ${pageResultsOccurrenceAbsenceRecords},
+    allResultsGuids:                        [${raw(allResultsGuids.collect{ "'" + it + "'" }.join(','))}],
     defaultDecimalLatitude:     ${grailsApplication.config.defaultDecimalLatitude ?: 0},
     defaultDecimalLongitude:    ${grailsApplication.config.defaultDecimalLongitude ?: 0},
     defaultZoomLevel:           ${grailsApplication.config.defaultZoomLevel ?: 5},
