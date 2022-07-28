@@ -249,7 +249,6 @@ function injectBiocacheSearch(lsids, recsTot) {
 }
 
 function injectBiocacheResultsActual(recsTot, limitSpp) {
-    var html = "<button type='submit' class='btn btn-link brand-primary' style='padding-right: 0' title='View occurrences for up to " + limitSpp + " species'>View occurrence records</button> (" + numberWithCommas(recsTot) + ")";
 
     var allResultsGuids = MAP_CONF.allResultsGuids;
     var formAction = '/occurrences';
@@ -260,8 +259,8 @@ function injectBiocacheResultsActual(recsTot, limitSpp) {
     }
 
     var form = $('<form action="'+ formAction + '" class="biocacheRecordsLink" method="post"></form>');
-
-    $(form).append(html);
+    var button = "<button type='submit' class='btn btn-link brand-primary' style='padding-right: 0' title='View occurrences for up to " + limitSpp + " species'>View occurrence records</button> (" + numberWithCommas(recsTot) + ")";
+    $(form).append(button);
 
     for(var i = 0; i < allResultsGuids.length; i++)
     {
