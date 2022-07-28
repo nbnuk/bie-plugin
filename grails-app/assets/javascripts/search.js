@@ -258,7 +258,14 @@ function injectBiocacheResultsActual(recsTot, limitSpp) {
     var html = "<span class='biocacheRecordsLink'><button type='submit' class='btn btn-link' title='View occurrences for up to " + limitSpp + " species'>View occurrence records</button> (" + numberWithCommas(recsTot) + ")</span>";
 
     var allResultsGuids = MAP_CONF.allResultsGuids;
-    var form = $("<form action='/occurrences' class='d-none'></form>");
+    var formAction = '/occurrences';
+
+    var includeRecordsFilter = $.getQueryParam('includeRecordsFilter');
+    if (includeRecordsFilter) {
+        formAction += '?includeRecordsFilter' + '=' + includeRecordsFilter;
+    }
+
+    var form = $('<form action="'+ formAction + '" method="post"></form>');
 
     $(form).append(html);
 
