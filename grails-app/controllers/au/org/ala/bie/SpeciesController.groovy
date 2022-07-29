@@ -475,14 +475,20 @@ class SpeciesController {
         pageGroups = pageGroups.sort().unique()
         if (areOthers) pageGroups = pageGroups.plus('Ungrouped') //TODO i18n
 
-        return pageGroups;
+        return pageGroups
     }
 
     def occurrences(){
         def title = "INNS species" //TODO
         //getAllResults()
 
-        def url = biocacheService.performBatchSearch(params.allResultsGuids, title, recordsFilter)
+        def allResultsGuids = params.getList("allResultsGuids")
+        if(params.allResultsGuids == null)
+        {
+            response.sendError(400)
+        }
+
+        def url = biocacheService.performBatchSearch(allResultsGuids, title, recordsFilter)
 
         if(url){
             redirect(url:url)
