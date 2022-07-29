@@ -280,7 +280,7 @@ class SpeciesController {
                 def synonymOccsPresence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.acceptedConceptID, "presence", recordsFilter, true, false)
                 def synonymOccsAbsence = bieService.getOccurrenceCountsForGuid(taxonDetails.taxonConcept.acceptedConceptID, "absence", recordsFilter, true, false)
                 synonymAllResultsOccs = synonymOccsPresence + synonymOccsAbsence
-                if ((pageResultsOccsPresence == null) || (synonymOccsAbsence == null)) {
+                if ((synonymOccsPresence == null) || (synonymOccsAbsence == null)) {
                     synonymAllResultsOccs = 0
                 }
             }
