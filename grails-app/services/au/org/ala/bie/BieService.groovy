@@ -2,7 +2,6 @@ package au.org.ala.bie
 
 import au.org.ala.bie.webapp2.SearchRequestParamsDTO
 import grails.converters.JSON
-import org.apache.commons.httpclient.util.URIUtil
 import org.grails.web.json.JSONObject
 
 class BieService {
@@ -10,25 +9,21 @@ class BieService {
     def webService
     def grailsApplication
 
-    def queryUsedForResults = ""
-
-    //legacy, not used
     def searchBie(SearchRequestParamsDTO requestObj) {
 
         def queryUrl = grailsApplication.config.bie.index.url + "/search?" + requestObj.getQueryString() +
-                "&facets=" + grailsApplication.config.facets
-        queryUrl += "&q.op=OR"
+                "&facets=" + grailsApplication.config.facets + "&q.op=OR"
 
         //add a query context for BIE - to reduce taxa to a subset
         if(grailsApplication.config.bieService.queryContext){
-            queryUrl = queryUrl + "&" + URIUtil.encodeWithinQuery(grailsApplication.config.bieService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")  /* URLEncoder.encode: encoding &,= and : breaks these tokens for SOLR */
+            queryUrl = queryUrl + "&" + URLEncoder.encode(grailsApplication.config.bieService.queryContext, "UTF-8")
         }
 
         //add a query context for biocache - this will influence record counts
         if(grailsApplication.config.biocacheService.queryContext){
-            queryUrl = queryUrl + "&bqc=" + URIUtil.encodeWithinQuery(grailsApplication.config.biocacheService.queryContext).replaceAll("%26","&").replaceAll("%3D","=").replaceAll("%3A",":")
+            queryUrl = queryUrl + "&bqc=" + grailsApplication.config.biocacheService.queryContext
         }
-        log.info("queryUrl = " + queryUrl)
+
         def json = webService.get(queryUrl)
         JSON.parse(json)
     }
@@ -41,17 +36,6 @@ class BieService {
         }
         try {
             def json = webService.get(grailsApplication.config.speciesList.baseURL + "/ws/species/" + guid.replaceAll(/\s+/,'+') + "?isBIE=true", true)
-            return JSON.parse(json)
-        } catch(Exception e){
-            //handles the situation where time out exceptions etc occur.
-            log.error("Error retrieving species list.", e)
-            return []
-        }
-    }
-
-    def getSpeciesListDetails(dataResourceUid) {
-        try {
-            def json = webService.get(grailsApplication.config.speciesList.baseURL + "/ws/speciesList/" + (dataResourceUid ?: ""), true)
             return JSON.parse(json)
         } catch(Exception e){
             //handles the situation where time out exceptions etc occur.
