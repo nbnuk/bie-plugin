@@ -77,17 +77,18 @@ function loadSpeciesLists(){
     });
 }
 
+//this is patched from ALA version. It is not a customisation
 function addAlerts(){
     // alerts button
     $("#alertsButton").click(function(e) {
         e.preventDefault();
         var query = "Species: " + SHOW_CONF.scientificName;
-        var searchString = "?q=" + SHOW_CONF.guid;
+        var searchString = "?q=" + SHOW_CONF.guid; //TODO: ?fq=taxon_concept_lsid:
         var url = SHOW_CONF.alertsUrl + "/webservice/createBiocacheNewRecordsAlert?";
         url += "queryDisplayName=" + encodeURIComponent(query);
-        url += "&baseUrlForWS=" + encodeURIComponent(SHOW_CONF.biocacheUrl);
-        url += "&baseUrlForUI=" + encodeURIComponent(SHOW_CONF.serverName);
-        url += "&webserviceQuery=%2Fws%2Foccurrences%2Fsearch" + encodeURIComponent(searchString);
+        url += "&baseUrlForWS=" + encodeURIComponent(SHOW_CONF.biocacheServiceUrl); /* was biocacheUrl */
+        url += "&baseUrlForUI=" + encodeURIComponent(SHOW_CONF.serverName); //TODO: biocacheUrl
+        url += "&webserviceQuery=%2Foccurrences%2Fsearch" + encodeURIComponent(searchString); /* remove /ws/ */
         url += "&uiQuery=%2Foccurrences%2Fsearch%3Fq%3D*%3A*";
         url += "&resourceName=" + encodeURIComponent("Atlas");
         window.location.href = url;
@@ -669,12 +670,13 @@ function loadGalleryType(category, start) {
     });
 }
 
+//this is patched from ALA version. It is not a customisation
 function getImageTitleFromOccurrence(el){
     var br = "<br/>";
     var briefHtml = "";
     //include sci name when genus or higher taxon
     if(SHOW_CONF.taxonRankID  < 7000) {
-        briefHtml += el.raw_scientificName;
+        briefHtml += (el.raw_scientificName === undefined? el.scientificName : el.raw_scientificName); //raw scientific name can be null, e.g. if taxon GUIDS were submitted
     }
 
     if (el.typeStatus) {
@@ -701,9 +703,10 @@ function getImageTitleFromOccurrence(el){
     return briefHtml;
 }
 
+//this is patched from ALA version. It is not a customisation
 function getImageFooterFromOccurrence(el){
     var br = "<br/>";
-    var detailHtml = el.raw_scientificName;
+    var detailHtml = (el.raw_scientificName === undefined? el.scientificName : el.raw_scientificName); //raw scientific name can be null, e.g. if taxon GUIDS were submitted
     if (el.typeStatus) detailHtml += br + 'Type: ' + el.typeStatus;
     if (el.collector) detailHtml += br + 'By: ' + el.collector;
     if (el.eventDate) detailHtml += br + 'Date: ' + moment(el.eventDate).format('YYYY-MM-DD');

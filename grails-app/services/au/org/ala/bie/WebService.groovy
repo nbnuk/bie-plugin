@@ -20,8 +20,8 @@ class WebService implements InitializingBean {
         log.debug "GET on " + url
         def conn = new URL(url).openConnection()
         try {
-            conn.setConnectTimeout(10000)
-            conn.setReadTimeout(50000)
+            conn.setConnectTimeout(20000)
+            conn.setReadTimeout(75000)
             return conn.content.text
         } catch (SocketTimeoutException e) {
             if(throwError)
@@ -48,8 +48,8 @@ class WebService implements InitializingBean {
         //JSONObject.NULL.metaClass.asBoolean = {-> false}
 
         try {
-            conn.setConnectTimeout(10000)
-            conn.setReadTimeout(50000)
+            conn.setConnectTimeout(20000)
+            conn.setReadTimeout(75000)
             def json = conn.content.text
             return JSON.parse(json)
         } catch (ConverterException e) {

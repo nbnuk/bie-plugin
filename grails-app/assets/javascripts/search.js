@@ -1,4 +1,5 @@
 //= require jquery.sortElemets
+//= require jquery-ui.min.js
 /*
  * Copyright (C) 2012 Atlas of Living Australia
  * All Rights Reserved.
@@ -41,8 +42,15 @@ $(document).ready(function() {
     });
 
     // AJAX search results
+    if (SEARCH_CONF.isNBNinns) {
+        injectBiocacheResultsActual(MAP_CONF.allResultsOccurrenceRecords, SEARCH_CONF.maxSpecies);
+        $('#related-searches').removeClass('hide');
+    } else {
+        if (!(SEARCH_CONF.isNBNni && SEARCH_CONF.isCompactLayout)) {
     injectBhlResults();
     injectBiocacheResults();
+        }
+    }
 
     // in mobile view toggle display of facets
     $("#toggleFacetDisplay").click(function() {
