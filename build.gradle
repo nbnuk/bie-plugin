@@ -69,7 +69,8 @@ dependencies {
     compile "org.codehaus.jackson:jackson-mapper-asl:1.8.6"
     compile "org.jsoup:jsoup:1.8.3"
 
-    compile group: 'org.grails.plugins', name: 'ala-bootstrap3', version: '3.0.2' //***
+//    compile group: 'org.grails.plugins', name: 'ala-bootstrap3', version: '3.0.2' //***
+    runtime "org.grails.plugins:ala-bootstrap3:3.2.3"
     compile group: 'org.grails.plugins', name: 'ala-auth', version:'3.1.0'
     runtime group: 'au.org.ala.plugins.grails', name: 'ala-charts-plugin', version: '2.0.1-NBN'
     compile group: 'au.org.ala.plugins.grails', name: 'images-client-plugin', version: '1.0'
