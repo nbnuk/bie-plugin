@@ -13,70 +13,72 @@
  * rights and limitations under the License.
  */
 
-function showSpeciesPage() {
+//This function is in nbn-bie/species.show.nbn.js
+// function showSpeciesPage() {
+//
+//     //console.log("Starting show species page");
+//
+//     //load content
+//     loadOverviewImages();
+//     loadMap();
+//     loadGalleries();
+//     loadExpertDistroMap();
+//     loadExternalSources();
+//     loadSpeciesLists();
+//     loadDataProviders();
+//     loadIndigenousData();
+//     //
+//     ////setup controls
+//     addAlerts();
+//     loadBhl();
+//     loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName, SHOW_CONF.synonyms, 'trove-integration','trove-result-list','previousTrove','nextTrove');
+// }
 
-    //console.log("Starting show species page");
-
-    //load content
-    loadOverviewImages();
-    loadMap();
-    loadGalleries();
-    loadExpertDistroMap();
-    loadExternalSources();
-    loadSpeciesLists();
-    loadDataProviders();
-    loadIndigenousData();
-    //
-    ////setup controls
-    addAlerts();
-    loadBhl();
-    loadTrove(SHOW_CONF.troveUrl, SHOW_CONF.scientificName, SHOW_CONF.synonyms, 'trove-integration','trove-result-list','previousTrove','nextTrove');
-}
-
-function loadSpeciesLists(){
-
-    //console.log('### loadSpeciesLists #### ' + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid);
-    $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?isBIE=true', function( data ) {
-        for(var i = 0; i < data.length; i++) {
-            var specieslist = data[i];
-            var maxListFields = 10;
-
-            if (specieslist.list.isBIE) {
-                var $description = $('#descriptionTemplate').clone();
-                $description.css({'display': 'block'});
-                $description.attr('id', '#specieslist-block-' + specieslist.dataResourceUid);
-                $description.addClass('species-list-block');
-                $description.find(".title").html(specieslist.list.listName);
-
-                if (specieslist.kvpValues.length > 0) {
-                    var content = "<table class='table specieslist-table'>";
-                    $.each(specieslist.kvpValues, function (idx, kvpValue) {
-                        if (idx >= maxListFields) {
-                            return false;
-                        }
-                        var value = kvpValue.value;
-                        if(kvpValue.vocabValue){
-                            value = kvpValue.vocabValue;
-                        }
-                        content += "<tr><td>" + (kvpValue.key + "</td><td>" + value + "</td></tr>");
-                    });
-                    content += "</table>";
-                    $description.find(".content").html(content);
-                } else {
-                    $description.find(".content").html("A species list provided by " + specieslist.list.listName);
-                }
-
-                $description.find(".source").css({'display':'none'});
-                $description.find(".rights").css({'display':'none'});
-
-                $description.find(".providedBy").attr('href', SHOW_CONF.speciesListUrl + '/speciesListItem/list/' + specieslist.dataResourceUid);
-                $description.find(".providedBy").html(specieslist.list.listName);
-
-                $description.appendTo('#listContent');
-            }
-        }
-    });
-}
+//This function is in nbn-bie/species.show.nbn.js
+// function loadSpeciesLists(){
+//
+//     //console.log('### loadSpeciesLists #### ' + SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid);
+//     $.getJSON(SHOW_CONF.speciesListUrl + '/ws/species/' + SHOW_CONF.guid + '?isBIE=true', function( data ) {
+//         for(var i = 0; i < data.length; i++) {
+//             var specieslist = data[i];
+//             var maxListFields = 10;
+//
+//             if (specieslist.list.isBIE) {
+//                 var $description = $('#descriptionTemplate').clone();
+//                 $description.css({'display': 'block'});
+//                 $description.attr('id', '#specieslist-block-' + specieslist.dataResourceUid);
+//                 $description.addClass('species-list-block');
+//                 $description.find(".title").html(specieslist.list.listName);
+//
+//                 if (specieslist.kvpValues.length > 0) {
+//                     var content = "<table class='table specieslist-table'>";
+//                     $.each(specieslist.kvpValues, function (idx, kvpValue) {
+//                         if (idx >= maxListFields) {
+//                             return false;
+//                         }
+//                         var value = kvpValue.value;
+//                         if(kvpValue.vocabValue){
+//                             value = kvpValue.vocabValue;
+//                         }
+//                         content += "<tr><td>" + (kvpValue.key + "</td><td>" + value + "</td></tr>");
+//                     });
+//                     content += "</table>";
+//                     $description.find(".content").html(content);
+//                 } else {
+//                     $description.find(".content").html("A species list provided by " + specieslist.list.listName);
+//                 }
+//
+//                 $description.find(".source").css({'display':'none'});
+//                 $description.find(".rights").css({'display':'none'});
+//
+//                 $description.find(".providedBy").attr('href', SHOW_CONF.speciesListUrl + '/speciesListItem/list/' + specieslist.dataResourceUid);
+//                 $description.find(".providedBy").html(specieslist.list.listName);
+//
+//                 $description.appendTo('#listContent');
+//             }
+//         }
+//     });
+// }
 
 function addAlerts(){
     // alerts button
@@ -95,62 +97,63 @@ function addAlerts(){
     });
 }
 
-function loadMap() {
-
-    if(SHOW_CONF.map != null){
-        return;
-    }
-
-    //add an occurrence layer for this taxon
-    var taxonLayer = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
-        SHOW_CONF.guid + (SHOW_CONF.qualityProfile? "&qualityProfile="+SHOW_CONF.qualityProfile : "")
-        +"&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter
-        , {
-        layers: 'ALA:occurrences',
-        format: 'image/png',
-        transparent: true,
-        attribution: SHOW_CONF.mapAttribution,
-        bgcolor: "0x000000",
-        outline: SHOW_CONF.mapOutline,
-        ENV: SHOW_CONF.mapEnvOptions
-    });
-
-    var speciesLayers = new L.LayerGroup();
-    taxonLayer.addTo(speciesLayers);
-
-    SHOW_CONF.map = L.map('leafletMap', {
-        center: [SHOW_CONF.defaultDecimalLatitude, SHOW_CONF.defaultDecimalLongitude],
-        zoom: SHOW_CONF.defaultZoomLevel,
-        layers: [speciesLayers],
-        scrollWheelZoom: false
-    });
-
-    var defaultBaseLayer = L.tileLayer(SHOW_CONF.defaultMapUrl, {
-        attribution: SHOW_CONF.defaultMapAttr,
-        subdomains: SHOW_CONF.defaultMapDomain,
-        mapid: SHOW_CONF.defaultMapId,
-        token: SHOW_CONF.defaultMapToken
-    });
-
-    defaultBaseLayer.addTo(SHOW_CONF.map);
-
-    var baseLayers = {
-        "Base layer": defaultBaseLayer
-    };
-
-    var sciName = SHOW_CONF.scientificName;
-
-    var overlays = {};
-    overlays[sciName] = taxonLayer;
-
-    L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
-
-    //SHOW_CONF.map.on('click', onMapClick);
-    SHOW_CONF.map.invalidateSize(false);
-
-    updateOccurrenceCount();
-    fitMapToBounds();
-}
+//This function is in nbn-bie/mapping.common.js
+// function loadMap() {
+//
+//     if(SHOW_CONF.map != null){
+//         return;
+//     }
+//
+//     //add an occurrence layer for this taxon
+//     var taxonLayer = L.tileLayer.wms(SHOW_CONF.biocacheServiceUrl + "/mapping/wms/reflect?q=lsid:" +
+//         SHOW_CONF.guid + (SHOW_CONF.qualityProfile? "&qualityProfile="+SHOW_CONF.qualityProfile : "")
+//         +"&qc=" + SHOW_CONF.mapQueryContext + SHOW_CONF.additionalMapFilter
+//         , {
+//         layers: 'ALA:occurrences',
+//         format: 'image/png',
+//         transparent: true,
+//         attribution: SHOW_CONF.mapAttribution,
+//         bgcolor: "0x000000",
+//         outline: SHOW_CONF.mapOutline,
+//         ENV: SHOW_CONF.mapEnvOptions
+//     });
+//
+//     var speciesLayers = new L.LayerGroup();
+//     taxonLayer.addTo(speciesLayers);
+//
+//     SHOW_CONF.map = L.map('leafletMap', {
+//         center: [SHOW_CONF.defaultDecimalLatitude, SHOW_CONF.defaultDecimalLongitude],
+//         zoom: SHOW_CONF.defaultZoomLevel,
+//         layers: [speciesLayers],
+//         scrollWheelZoom: false
+//     });
+//
+//     var defaultBaseLayer = L.tileLayer(SHOW_CONF.defaultMapUrl, {
+//         attribution: SHOW_CONF.defaultMapAttr,
+//         subdomains: SHOW_CONF.defaultMapDomain,
+//         mapid: SHOW_CONF.defaultMapId,
+//         token: SHOW_CONF.defaultMapToken
+//     });
+//
+//     defaultBaseLayer.addTo(SHOW_CONF.map);
+//
+//     var baseLayers = {
+//         "Base layer": defaultBaseLayer
+//     };
+//
+//     var sciName = SHOW_CONF.scientificName;
+//
+//     var overlays = {};
+//     overlays[sciName] = taxonLayer;
+//
+//     L.control.layers(baseLayers, overlays).addTo(SHOW_CONF.map);
+//
+//     //SHOW_CONF.map.on('click', onMapClick);
+//     SHOW_CONF.map.invalidateSize(false);
+//
+//     updateOccurrenceCount();
+//     fitMapToBounds();
+// }
 
 /**
  * Update the total records count for the occurrence map in heading text
