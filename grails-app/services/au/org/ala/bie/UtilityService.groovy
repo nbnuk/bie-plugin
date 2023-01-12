@@ -133,7 +133,7 @@ class UtilityService {
                                       (uid.startsWith("in")) ? "institution" : null
                         if(type != null && grailsApplication.config.collectory.baseURL){
                             String url = grailsApplication.config.collectory.baseURL+"/ws/"+type+"/"+uid
-                            def json = webService.get(url)
+                            def json = webClientService.get(url)
                             Map wsmap =JSON.parse(json)
                             map.putAt(uid, wsmap.get("name"))
                             map.put(uid+"_resourceType", wsmap.get("resourceType"))
