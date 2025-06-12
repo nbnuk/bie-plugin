@@ -175,7 +175,7 @@ function updateOccurrenceCount() {
 }
 
 function fitMapToBounds() {
-    var jsonUrl = SHOW_CONF.biocacheServiceUrl + "/mapping/bounds.json?q=lsid:" + SHOW_CONF.guid + "?";
+    var jsonUrl = SHOW_CONF.biocacheServiceUrl + "/mapping/bounds.json?q=lsid:" + SHOW_CONF.guid + "&callback=?";
     $.getJSON(jsonUrl, function(data) {
         if (data.length == 4 && data[0] != 0 && data[1] != 0) {
             //console.log("data", data);
@@ -231,7 +231,7 @@ function loadDataProviders(){
        url = url + '&fq=' + SHOW_CONF.mapQueryContext;
     }
 
-    url = url + '&facet=on&facets=data_resource_uid?';
+    url = url + '&facet=on&facets=data_resource_uid&callback=?';
 
     var uiUrl = SHOW_CONF.biocacheUrl  +
         '/occurrences/search?q=lsid:' +
@@ -506,7 +506,7 @@ function loadOverviewImages(){
         hasPreferredImage = true;
         var prefUrl = SHOW_CONF.biocacheServiceUrl  +
             '/occurrences/search.json?q=images:' + SHOW_CONF.preferredImageId +
-            '&fq=-assertion_user_id:*&im=true&facet=off&pageSize=1&start=0';
+            '&fq=-assertion_user_id:*&im=true&facet=off&pageSize=1&start=0&callback=?';
         $.getJSON(prefUrl, function(data){
             // console.log("prefUrl", prefUrl, data);
             if (data && data.totalRecords > 0) {
@@ -530,7 +530,7 @@ function loadOverviewImages(){
     var url = SHOW_CONF.biocacheServiceUrl  +
         '/occurrences/search.json?q=lsid:' +
         SHOW_CONF.guid +
-        '&fq=multimedia:"Image"&fq=geospatial_kosher:true&fq=-user_assertions:50001&fq=-user_assertions:50005&im=true&facet=off&pageSize=5&start=0';
+        '&fq=multimedia:"Image"&fq=geospatial_kosher:true&fq=-user_assertions:50001&fq=-user_assertions:50005&im=true&facet=off&pageSize=5&start=0&callback=?';
     //console.log('Loading images from: ' + url);
 
     $.getJSON(url, function(data){
@@ -630,7 +630,7 @@ function loadGalleryType(category, start) {
         '/occurrences/search.json?q=lsid:' +
         SHOW_CONF.guid +
         (SHOW_CONF.qualityProfile ? "&qualityProfile=" + SHOW_CONF.qualityProfile : "") + '&fq=multimedia:"Image"&pageSize=' + pageSize +
-        '&facet=off&start=' + start + imageCategoryParams[category] + '&im=true';
+        '&facet=off&start=' + start + imageCategoryParams[category] + '&im=true&callback=?';
 
     //console.log("URL: " + url);
 
