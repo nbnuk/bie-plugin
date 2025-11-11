@@ -16,7 +16,9 @@ class BieService {
 
         //add a query context for BIE - to reduce taxa to a subset
         if(grailsApplication.config.bieService.queryContext){
-            queryUrl = queryUrl + "&" + URLEncoder.encode(grailsApplication.config.bieService.queryContext, "UTF-8")
+            // NBN - Split string and encode values only as qc is currently formatted as querystring segment e.g. fq=-idxtype:LOCALITY
+            // It would be more appropriate to prepend fq= in code rather than include it in the value however this will require changes in a number of places and wider testing
+            queryUrl = queryUrl + "&" + UtilityService.encodeQuerystringValues(grailsApplication.config.bieService.queryContext)
         }
 
         //add a query context for biocache - this will influence record counts
@@ -73,7 +75,7 @@ class BieService {
         def url = grailsApplication.config.bie.index.url + "/childConcepts/" + guid.replaceAll(/\s+/,'+')
 
         if(grailsApplication.config.bieService.queryContext){
-            url = url + "?" + URLEncoder.encode(grailsApplication.config.bieService.queryContext, "UTF-8")
+            url = url + "?" + UtilityService.encodeQuerystringValues(grailsApplication.config.bieService.queryContext)
         }
 
         def json = webClientService.getJson(url).sort() { it.rankID?:0 }

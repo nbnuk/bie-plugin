@@ -3,6 +3,7 @@ package au.org.ala.bie
 import org.apache.commons.lang.StringUtils
 import grails.converters.JSON
 import org.grails.web.json.JSONObject
+import org.springframework.web.util.UriUtils
 
 class UtilityService {
 
@@ -210,5 +211,23 @@ class UtilityService {
         }
         log.debug "synonyms = ${synonyms}"
         synonyms
+    }
+
+    static String encodeQuerystringValues(String queryString) {
+        if (!queryString) return ""
+
+        queryString.split('&')
+                .findAll { it }
+                .collect { pair ->
+                    int idx = pair.indexOf('=')
+                    if (idx == -1) {
+                        return pair
+                    } else {
+                        String key = pair.substring(0, idx)
+                        String value = pair.substring(idx + 1)
+                        String encodedValue = URLEncoder.encode(value, "UTF-8")
+                        return "${key}=${encodedValue}"
+                    }
+                }.join('&')
     }
 }
