@@ -75,7 +75,7 @@ class BieService {
         def url = grailsApplication.config.bie.index.url + "/childConcepts/" + guid.replaceAll(/\s+/,'+')
 
         if(grailsApplication.config.bieService.queryContext){
-            url = url + "?" + UtilityService.encodeQuerystringValues(grailsApplication.config.bieService.queryContext)
+            url = url + "?" + URLEncoder.encode(grailsApplication.config.bieService.queryContext, "UTF-8")
         }
 
         def json = webClientService.getJson(url).sort() { it.rankID?:0 }
