@@ -11,7 +11,7 @@ buildscript {
     }
 }
 
-version "1.5.2-NBN-PIPELINES-0-1-0-SNAPSHOT"
+version "1.5.2-NBN-PIPELINES-0-1-0"
 
 group "au.org.ala.plugins.grails"
 
